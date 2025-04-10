@@ -35,8 +35,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +76,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         if (queryDto.getEndShipmentDate() != null) {
             // 处理结束时间范围（包含当天）
-            LocalDateTime endDateTime = queryDateRangeEnd(queryDto.getEndShipmentDate());
+            LocalDate endDateTime = queryDateRangeEnd(queryDto.getEndShipmentDate());
             queryWrapper.le(Order::getShipmentDate, endDateTime);
         }
         // 4. 排序规则（示例按出货时间倒序）
@@ -90,10 +90,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     }
 
     // 处理结束日期的时间范围（包含当天）
-    private LocalDateTime queryDateRangeEnd(LocalDateTime endDateTime) {
-        return endDateTime != null ?
-                endDateTime.toLocalDate().atTime(LocalTime.MAX) :
-                null;
+    private LocalDate queryDateRangeEnd(LocalDate endDate) {
+        return endDate != null ? endDate.plusDays(1) : null;
     }
 
     // 转换分页对象方法
@@ -134,7 +132,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
         if (queryDto.getEndShipmentDate() != null) {
             // 处理结束时间范围（包含当天）
-            LocalDateTime endDateTime = queryDateRangeEnd(queryDto.getEndShipmentDate());
+            LocalDate endDateTime = queryDateRangeEnd(queryDto.getEndShipmentDate());
             wrapper.le("o.shipment_date", endDateTime);
         }
         // 4. 排序规则（示例按出货时间升序）

@@ -733,8 +733,8 @@ const load = async () => {
     }
     // 转换日期范围参数
     if (params.dateRange && params.dateRange.length === 2) {
-      params.beginPurchaseDate = dayjs(params.dateRange[0]).format('YYYY-MM-DD HH:mm:ss');
-      params.endPurchaseDate = dayjs(params.dateRange[1]).format('YYYY-MM-DD HH:mm:ss');
+      params.beginShipmentDate = dayjs(params.dateRange[0]).format('YYYY-MM-DD');
+      params.endShipmentDate = dayjs(params.dateRange[1]).format('YYYY-MM-DD');
     }
     delete params.dateRange; // 移除原始参数
     const res = await request.get('/order/page', {params})
