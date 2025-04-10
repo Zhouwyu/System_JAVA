@@ -13,4 +13,5 @@ public class OrderAddDto implements Serializable {
     private BigDecimal totalPrice;
     private String remark;
     private String shipmentDate;
+    private String operator;
 }

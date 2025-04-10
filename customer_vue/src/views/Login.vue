@@ -146,8 +146,8 @@ const handleSubmit = async () => {
     // 4. 存储Token（根据实际返回字段调整）
     localStorage.setItem('accessToken', data.data.accessToken)
     localStorage.setItem('username', data.data.username)
-    // 跳转逻辑
-    const targetPath = form.roleId === 0 ? '/manager/home' : '/user/home'
+    // 跳转逻辑，暂时只实现管理员身份登录，其它登录均跳到404
+    const targetPath = form.roleId === 0 ? '/manager/home' : '/404'
     await router.replace(targetPath) // 等待跳转完成
 
     ElMessage.success('登录成功')

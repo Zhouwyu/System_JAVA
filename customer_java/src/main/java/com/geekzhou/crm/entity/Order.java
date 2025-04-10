@@ -63,6 +63,9 @@ public class Order {
     @TableField("status")
     private Integer status; // 状态，1：未出货，2：已出货
 
+    @TableField("operator")
+    private String operator; // 操作员
+
     // 关联字段示例（非数据库字段）
     @TableField(exist = false)
     private Customer customer;

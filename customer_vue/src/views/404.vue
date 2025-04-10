@@ -27,7 +27,7 @@
 
         <!-- 返回按钮 -->
         <button @click="goHome" class="action-btn">
-          <span>返回首页</span>
+          <span>返回登录页面</span>
           <svg class="arrow-icon" viewBox="0 0 24 24">
             <path d="M5 12H19M12 5l7 7-7 7"/>
           </svg>
@@ -40,7 +40,9 @@
 <script setup>
 const goHome = () => {
   // 导航回首页逻辑
-  window.location.href = '/manager/home'
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('username')
+  window.location.href = '/login'
 }
 </script>
 

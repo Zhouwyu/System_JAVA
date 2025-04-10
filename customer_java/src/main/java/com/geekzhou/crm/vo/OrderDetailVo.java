@@ -19,6 +19,6 @@ public class OrderDetailVo implements Serializable {
     private LocalDateTime updateTime; // 最后修改时间
 
     private CustomerDetailVo customer;      // 客户信息
-//    private OperatorDetailVo operator;     // 操作员信息
+    private OperatorDetailVo operator;     // 操作员信息
     private List<ProductItemDetailVo> products; // 商品清单
 }

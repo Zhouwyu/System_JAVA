@@ -12,22 +12,13 @@ import com.geekzhou.crm.common.OrderShipmentStatus;
 import com.geekzhou.crm.dto.OrderAddDto;
 import com.geekzhou.crm.dto.OrderQueryDto;
 import com.geekzhou.crm.dto.OrderWithProductsDto;
-import com.geekzhou.crm.entity.Customer;
-import com.geekzhou.crm.entity.Order;
-import com.geekzhou.crm.entity.OrderWithProducts;
-import com.geekzhou.crm.entity.Product;
+import com.geekzhou.crm.entity.*;
 import com.geekzhou.crm.exception.CustomException;
 import com.geekzhou.crm.mapper.mapstruct.OrderToShowInfoVoMapper;
-import com.geekzhou.crm.mapper.mybatis.CustomerMapper;
-import com.geekzhou.crm.mapper.mybatis.OrderMapper;
-import com.geekzhou.crm.mapper.mybatis.OrderWithProductsMapper;
-import com.geekzhou.crm.mapper.mybatis.ProductMapper;
+import com.geekzhou.crm.mapper.mybatis.*;
 import com.geekzhou.crm.service.OrderService;
 import com.geekzhou.crm.utils.OrderUtils;
-import com.geekzhou.crm.vo.CustomerDetailVo;
-import com.geekzhou.crm.vo.OrderDetailVo;
-import com.geekzhou.crm.vo.OrderShowInfoVo;
-import com.geekzhou.crm.vo.ProductItemDetailVo;
+import com.geekzhou.crm.vo.*;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -55,6 +46,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private ProductMapper productMapper;
     @Autowired
     private CustomerMapper customerMapper;
+    @Autowired
+    private UserMapper userMapper;
 
     /**
      * 暂时废弃不用
@@ -158,6 +151,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setRemark(orderDto.getRemark());
         order.setIsDeleted(0);
         order.setTotalPrice(orderDto.getTotalPrice());
+        order.setOperator(orderDto.getOperator());
         // 2. 存order表
         orderMapper.insert(order);
         // 3. 接着存order_products表（商品明细）
@@ -340,8 +334,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         orderDetailVo.setProducts(productItemList);
-        // 操作用户信息 TODO
-
+        // 操作用户信息
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
+                .eq(User::getUsername, order.getOperator()));
+        if (user != null) {
+            OperatorDetailVo operatorDetailVo = new OperatorDetailVo();
+            operatorDetailVo.setName(user.getUsername());
+            operatorDetailVo.setUserId(user.getUserId());
+            orderDetailVo.setOperator(operatorDetailVo);
+        }
         return orderDetailVo;
     }
 

@@ -356,7 +356,7 @@
                     {{ currentOrder.remark || '无备注信息' }}
                   </el-descriptions-item>
                   <el-descriptions-item label="操作人员">
-                    {{ username }}
+                    {{ currentOrder.operator.name }}
                   </el-descriptions-item>
                   <el-descriptions-item label="最后修改时间">
                     {{ formatDate(currentOrder.updateTime) }}
@@ -689,7 +689,8 @@ const submitForm = async () => {
       })),
       totalPrice: form.totalPrice,
       remark: form.remark,
-      shipmentDate: form.shipmentDate
+      shipmentDate: form.shipmentDate,
+      operator: localStorage.getItem("username")
     }
     if (editMode.value) payload.oderId = currentEditId.value
     // 4. 提交请求
@@ -849,10 +850,10 @@ const currentOrder = ref({
   },
 
   // 操作人员信息
-  // operator: {
-  //   userId: null,
-  //   name: localStorage.getItem('username') || '系统自动'
-  // },
+  operator: {
+    userId: null,
+    name: '' || '系统自动'
+  },
 
   // 商品清单（数组结构）
   products: [
@@ -897,12 +898,9 @@ const showOrderDetail = async (row) => {
   }
 }
 
-// 响应式用户名
-const username = ref('')
 onMounted(() => {
   load()
   loadBaseData()
-  username.value = localStorage.getItem('username') || '未登录用户'
 })
 
 // 通用日期格式化方法
