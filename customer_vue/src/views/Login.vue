@@ -49,7 +49,7 @@
       <!-- 记住我 & 忘记密码 -->
       <div class="form-options">
         <el-checkbox v-model="form.rememberMe">记住我</el-checkbox>
-        <el-link type="primary" @click="handleForgetPassword">忘记密码？</el-link>
+<!--        <el-link type="primary" @click="handleForgetPassword">忘记密码？</el-link>-->
       </div>
 
       <el-button
