@@ -192,6 +192,7 @@
                 :preview-src-list="[row.productImage + '?accessToken=' + data.accessToken]"
                 fit="cover"
                 class="thumb-image"
+                preview-teleported
             />
           </template>
         </el-table-column>
@@ -563,5 +564,24 @@ onMounted(() => {
   width: 60px;
   height: 60px;
   border-radius: 4px;
+}
+
+/* 调整图片预览层样式 */
+:deep(.el-image-viewer__mask) {
+  z-index: 3000 !important;
+}
+
+:deep(.el-image-viewer__wrapper) {
+  z-index: 3001 !important;
+}
+
+/* 确保表格容器不会限制溢出 */
+.el-table__body-wrapper {
+  overflow: visible !important;
+}
+
+/* 调整表格行高度避免挤压 */
+.el-table .cell {
+  padding: 4px 0;
 }
 </style>

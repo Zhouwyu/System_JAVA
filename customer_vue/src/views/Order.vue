@@ -282,6 +282,8 @@
                 title="订单详细信息"
                 width="60%"
                 top="5vh"
+                modal-append-to-body
+                append-to-body
             >
               <!-- 新增导出按钮 -->
               <template #header>
@@ -1071,5 +1073,33 @@ const exportToPDF = async () => {
     background-color: #f0f9eb;
     border-color: #c2e7b0;
   }
+}
+
+/* 调整对话框层级 */
+:deep(.el-dialog) {
+  z-index: 3002 !important;
+}
+
+:deep(.el-overlay) {
+  z-index: 3001 !important;
+}
+
+/* 确保表格容器不会限制溢出 */
+.el-table__body-wrapper {
+  overflow: visible !important;
+}
+
+/* 调整表格行高度避免挤压 */
+.el-table .cell {
+  padding: 4px 0;
+}
+
+/* 对话框头部布局 */
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding-right: 10px;
 }
 </style>
