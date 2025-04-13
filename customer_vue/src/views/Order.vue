@@ -93,10 +93,11 @@
                 v-model="form.customerId"
                 placeholder="请选择客户"
                 filterable
+                :filter-method="filterCustomers"
                 @change="handleCustomerChange"
             >
               <el-option
-                  v-for="c in data.customerOptions"
+                  v-for="c in filteredCustomers"
                   :key="c.value"
                   :label="c.label"
                   :value="c.value"
@@ -148,20 +149,20 @@
                   multiple
                   value-key="productId"
                   placeholder="选择商品"
+                  filterable
+                  :filter-method="filterProducts"
                   @change="handleProductSelect"
               >
-                <!-- 修改el-option的渲染方式 -->
                 <el-option
-                    v-for="p in data.productOptions"
+                    v-for="p in filteredProducts"
                     :key="p.productId"
                     :value="p"
-                    :label="`${p.productName} | 库存: ${p.stock} | 单价: ¥${p.price}`"
                     :disabled="p.stock <= 0"
                 >
                   <span style="float: left">{{ p.productName }}</span>
                   <span style="float: right; color: #8492a6; font-size: 13px">
-    ¥{{ p.price }} (库存: {{ p.stock }})
-  </span>
+            ¥{{ p.price }} (库存: {{ p.stock }})
+        </span>
                 </el-option>
               </el-select>
 
@@ -413,7 +414,7 @@
 </template>
 
 <script setup>
-import {reactive, ref, onMounted, nextTick} from 'vue'
+import {reactive, ref, onMounted, nextTick, watch} from 'vue'
 import {dayjs, ElMessage, ElMessageBox} from 'element-plus'
 import request from '@/utils/request'
 import jsPDF from "jspdf";
@@ -482,6 +483,45 @@ const editMode = ref(false)
 const currentEditId = ref(null)
 const initialFormState = ref(null) // 保存表单初始状态
 const hasUnsavedChanges = ref(false) // 跟踪修改状态
+
+// 用于实现商品模糊搜索
+const searchQuery = ref('')
+const filteredProducts = ref([])
+// 用于实现客户模糊搜索
+const filteredCustomers = ref([])
+
+// 商品过滤方法
+const filterProducts = (query) => {
+  searchQuery.value = query
+  if (!query) {
+    filteredProducts.value = data.productOptions
+    return
+  }
+  filteredProducts.value = data.productOptions.filter(item => {
+    return item.productName.toLowerCase().includes(query.toLowerCase())
+  })
+}
+
+// 监听商品选项变化（当基础数据更新时同步）
+watch(() => data.productOptions, (newVal) => {
+  filteredProducts.value = [...newVal]
+}, { deep: true })
+
+// 客户过滤方法
+const filterCustomers = (query) => {
+  if (!query) {
+    filteredCustomers.value = data.customerOptions
+    return
+  }
+  filteredCustomers.value = data.customerOptions.filter(item => {
+    return item.label.toLowerCase().includes(query.toLowerCase())
+  })
+}
+
+// 监听客户数据变化
+watch(() => data.customerOptions, (newVal) => {
+  filteredCustomers.value = [...newVal]
+}, { deep: true })
 
 // 新增/编辑操作
 const handleAdd = () => {
@@ -901,6 +941,8 @@ const showOrderDetail = async (row) => {
 onMounted(() => {
   load()
   loadBaseData()
+  filteredProducts.value = [...data.productOptions]
+  filteredCustomers.value = [...data.customerOptions]
 })
 
 // 通用日期格式化方法
