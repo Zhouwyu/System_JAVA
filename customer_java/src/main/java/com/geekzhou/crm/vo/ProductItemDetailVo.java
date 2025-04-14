@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public class ProductItemDetailVo implements Serializable {
     private Integer productId;         // 商品ID
     private String productName;     // 商品名称
-    private BigDecimal price;       // 商品单价（下单时价格）
+    private BigDecimal price;       // 商品单价
     private Integer quantity;       // 购买数量
-    private BigDecimal unitPrice;   // 购买时单价（可能与当前价格不同）
+    private BigDecimal salePrice;   // 成交价
 }

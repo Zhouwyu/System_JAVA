@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <h2>系统更新日志</h2>
-          <el-tag type="info">当前版本: v1.3.0</el-tag>
+          <el-tag type="info">当前版本: v1.3.1</el-tag>
         </div>
       </template>
 
@@ -51,6 +51,17 @@
 import { ref } from 'vue';
 
 const changelog = ref([
+  {
+    version: 'v1.3.1',
+    date: '2025-04-14',
+    changes: [
+      { type: '新增', desc: '禁止修改用户名逻辑' },
+      { type: '新增', desc: '新建订单下单时可以自定义成交价功能' },
+      { type: '新增', desc: '标记出货成功后不能修改订单功能' },
+      { type: '优化', desc: '订单详情显示逻辑' },
+
+    ]
+  },
   {
     version: 'v1.3.0',
     date: '2025-04-08',

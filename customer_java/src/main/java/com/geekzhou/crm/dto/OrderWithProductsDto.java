@@ -10,7 +10,8 @@ public class OrderWithProductsDto implements Serializable {
     private String orderNo;
     private Integer productId;
     private String productName;
-    private BigDecimal price;
+    private BigDecimal price; // 商品原价
+    private BigDecimal salePrice; // 商品成交价
     private Integer quantity;
     private Integer stock;
 }

@@ -145,7 +145,15 @@
               <div v-for="(item, index) in form.products" :key="index" class="product-item">
                 <div class="product-info">
                   <span>{{ item.productName }}</span>
+                  <el-input-number
+                      v-model="item.salePrice"
+                      :min="0"
+                      :precision="2"
+                      :step="10"
+                      @change="calculateTotal"
+                  />
                   <span>单价: ¥{{ item.price }}</span>
+                  <span>成交价: ¥{{ item.salePrice }}</span>
                 </div>
                 <el-input-number
                     v-model="item.quantity"
@@ -298,9 +306,9 @@
                   <el-descriptions-item label="商品清单" :span="2">
                     <el-table :data="currentOrder.products" border size="small">
                       <el-table-column label="商品名称" prop="productName" width="180"/>
-                      <el-table-column label="单价" width="120">
+                      <el-table-column label="成交价" width="120">
                         <template #default="{row}">
-                          ¥{{ row.price.toFixed(2) }}
+                          ¥{{ row.salePrice.toFixed(2) }}
                         </template>
                       </el-table-column>
                       <el-table-column label="数量" prop="quantity" width="100"/>
@@ -339,9 +347,79 @@
             </el-dialog>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column label="操作" width="180">
           <template #default="scope">
             <div class="action-buttons">
+              <el-button
+                  v-if="scope.row.status === 1"
+                  type="warning"
+                  size="small"
+                  @click="handleRevise(scope.row)"
+              >
+                修订订单
+              </el-button>
+
+              <el-dialog v-model="reviseDialogVisible" title="订单修订" width="65%">
+                <el-form :model="reviseForm">
+                  <!-- 折扣类型选择 -->
+                  <el-form-item label="折扣类型">
+                    <el-radio-group v-model="reviseForm.discountType">
+                      <el-radio :label="0">无折扣</el-radio>
+                      <el-radio :label="1">百分比</el-radio>
+                      <el-radio :label="2">固定金额</el-radio>
+                    </el-radio-group>
+                  </el-form-item>
+
+                  <!-- 折扣详情 -->
+                  <el-form-item v-if="reviseForm.discountType === 1" label="折扣率">
+                    <el-input-number
+                        v-model="reviseForm.discountRate"
+                        :min="0"
+                        :max="100"
+                        :precision="0"
+                        suffix="%"
+                    />
+                  </el-form-item>
+
+                  <el-form-item v-if="reviseForm.discountType === 2" label="优惠金额">
+                    <el-input-number
+                        v-model="reviseForm.discountAmount"
+                        :min="0"
+                        :precision="2"
+                    ></el-input-number>
+                  </el-form-item>
+
+                  <!-- 商品级折扣 -->
+                  <el-table :data="reviseForm.products">
+                    <el-table-column label="商品名称" prop="productName"/>
+                    <el-table-column label="单价" prop="price"/>
+                    <el-table-column label="数量">
+                      <template #default="{row}">
+                        <el-input-number
+                            v-model="row.quantity"
+                            :min="0"
+                            :max="row.stock + row.originalQuantity"
+                        />
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="单品折扣">
+                      <template #default="{row}">
+                        <el-input-number
+                            v-model="row.itemDiscount"
+                            :min="0"
+                            :max="row.price"
+                            :precision="2"
+                        />
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </el-form>
+
+                <template #footer>
+                  <el-button @click="reviseDialogVisible = false">取消</el-button>
+                  <el-button type="primary" @click="submitRevision">提交修订</el-button>
+                </template>
+              </el-dialog>
               <el-button
                   v-if="scope.row.status === 1"
                   size="small"
@@ -445,9 +523,7 @@ const rules = {
 // 抽屉控制
 const drawerVisible = ref(false)
 const formRef = ref()
-const currentEditId = ref(null)
 const initialFormState = ref(null) // 保存表单初始状态
-const hasUnsavedChanges = ref(false) // 跟踪修改状态
 
 // 用于实现商品模糊搜索
 const searchQuery = ref('')
@@ -470,7 +546,7 @@ const filterProducts = (query) => {
 // 监听商品选项变化（当基础数据更新时同步）
 watch(() => data.productOptions, (newVal) => {
   filteredProducts.value = [...newVal]
-}, { deep: true })
+}, {deep: true})
 
 // 客户过滤方法
 const filterCustomers = (query) => {
@@ -486,7 +562,7 @@ const filterCustomers = (query) => {
 // 监听客户数据变化
 watch(() => data.customerOptions, (newVal) => {
   filteredCustomers.value = [...newVal]
-}, { deep: true })
+}, {deep: true})
 
 // 新增/编辑操作
 const handleAdd = () => {
@@ -565,7 +641,7 @@ const loadBaseData = async () => {
 // 计算总金额
 const calculateTotal = () => {
   form.totalPrice = form.products.reduce((sum, item) =>
-      sum + (item.price * item.quantity), 0
+      sum + (item.salePrice * item.quantity), 0
   )
 }
 
@@ -581,6 +657,7 @@ const handleProductSelect = (selectedProducts) => {
   const mergedProducts = selectedProducts.map(sp => {
     return productMap.get(sp.productId) || {
       ...sp,
+      salePrice: sp.price, // 默认使用原价
       quantity: 1
     }
   })
@@ -644,6 +721,7 @@ const submitForm = async () => {
         productName: item.productName,
         quantity: item.quantity,
         price: item.price,
+        salePrice: item.salePrice,
         stock: item.stock,
         orderNo: "",
       })),
@@ -786,6 +864,27 @@ const handleShip = async (row) => {
 
 // 在setup()中添加响应式数据和状态映射
 const detailDialogVisible = ref(false)
+
+// 修订相关状态
+const reviseDialogVisible = ref(false)
+
+const reviseForm = ref({
+  originalOrderId: null,
+  originalOrderNo: '',
+  discountType: 0,
+  discountRate: 0,
+  discountAmount: 0,
+  products: [
+    {
+      productId: null,
+      productName: '',
+      price: 0,
+      quantity: 1,
+      unitPrice: 0, // 购买时单价（可能不同于商品当前价格）
+    }
+  ]
+})
+
 // 初始化包含完整结构的响应式对象
 // 在setup()中初始化currentOrder
 const currentOrder = ref({
@@ -821,10 +920,19 @@ const currentOrder = ref({
       productName: '',
       price: 0,
       quantity: 1,
-      unitPrice: 0, // 购买时单价（可能不同于商品当前价格）
+      salePrice: 0, // 成交价
     }
-  ]
+  ],
+
+
+  // 做修改订单用
+  discountType: 0,       // 折扣类型 0-无 1-百分比 2-固定金额
+  discountRate: 0,       // 折扣率（百分比）
+  discountAmount: 0,     // 优惠金额
+  originalOrderId: null, // 原始订单ID（用于关联修订）
+  isRevised: false       // 是否是修订订单
 })
+
 // 订单状态映射
 const orderStatusMap = {
   1: '待出货',
@@ -842,18 +950,80 @@ const showOrderDetail = async (row) => {
   try {
     // 请求订单详情数据（根据实际接口调整）
     const res = await request.get(`/order/detail/${row.orderId}`)
+    console.log("看看详情")
+    console.table(res)
     // 处理商品数据格式
     currentOrder.value = {
       ...res.data,
       products: res.data.products.map(p => ({
         ...p,
-        subtotal: (p.price * p.quantity).toFixed(2)
+        subtotal: (p.salePrice * p.quantity).toFixed(2)
       })),
-      totalPrice: res.data.products.reduce((sum, p) => sum + p.price * p.quantity, 0)
+      totalPrice: res.data.products.reduce((sum, p) => sum + p.salePrice * p.quantity, 0)
     }
     detailDialogVisible.value = true
   } catch (error) {
     ElMessage.error('获取订单详情失败')
+  }
+}
+
+// 打开修订对话框
+const handleRevise = async (order) => {
+  try {
+    // 先获取完整订单数据
+    const { data } = await request.get(`/order/detail/${order.orderId}`)
+    // 填充修订表单
+    reviseForm.value = {
+      originalOrderId: data.orderId,
+      originalOrderNo: data.orderNo,
+      discountType: 0,
+      discountRate: 0,
+      discountAmount: 0,
+      products: data.products.map(p => ({
+        ...p,
+        originalQuantity: p.quantity,
+        itemDiscount: 0,
+        // 添加库存信息（根据需求）
+        // currentStock: p.stock
+      }))
+    }
+    reviseDialogVisible.value = true
+  } catch (error) {
+    ElMessage.error('获取订单详情失败')
+  }
+}
+
+// 提交修订
+const submitRevision = async () => {
+  try {
+    // 计算新总金额
+    const newTotal = reviseForm.products.reduce((total, item) => {
+      const itemTotal = (item.price - item.itemDiscount) * item.quantity
+      return total + itemTotal
+    }, 0)
+
+    // 应用全局折扣，1为打折，2为扣减一定金额
+    let finalTotal = newTotal
+    if(reviseForm.discountType === 1) {
+      finalTotal *= (1 - reviseForm.discountRate/100)
+    } else if(reviseForm.discountType === 2) {
+      finalTotal -= reviseForm.discountAmount
+    }
+
+    // 创建新订单
+    const res = await request.post('/order/revise', {
+      ...reviseForm,
+      totalPrice: finalTotal,
+      operator: localStorage.getItem('username')
+    })
+
+    // 处理原订单状态
+    await request.post(`/order/revoke/${reviseForm.originalOrderId}`)
+
+    ElMessage.success('订单修订成功')
+    load()
+  } catch (error) {
+    ElMessage.error('修订失败：' + error.message)
   }
 }
 
@@ -982,10 +1152,12 @@ const exportToPDF = async () => {
   letter-spacing: 0.5px;
 
   /* 不同状态的具体样式 */
+
   &--warning {
     background-color: #fdf6ec;
     border-color: #f5dab1;
   }
+
   &--success {
     background-color: #f0f9eb;
     border-color: #c2e7b0;

@@ -106,6 +106,7 @@
           <el-input
               v-model="currentUser.userName"
               placeholder="请输入用户名"
+              :disabled="dialogType === 'edit'"
               :validate-event="false"
           @blur="formRef.validateField('userName')"
           >

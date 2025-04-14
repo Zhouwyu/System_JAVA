@@ -188,6 +188,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             op.setProductId(dto.getProductId());
             op.setQuantity(dto.getQuantity());
             op.setUnitPrice(dto.getPrice());
+            op.setSalePrice(dto.getSalePrice());
             return op;
         }).collect(Collectors.toList());
     }
@@ -326,9 +327,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                             new ProductItemDetailVo(
                                     owp.getProductId(),
                                     product.getProductName(),
-                                    product.getPrice(),
+                                    owp.getUnitPrice(),
                                     owp.getQuantity(),
-                                    owp.getUnitPrice()
+                                    owp.getSalePrice()
                             ) : null;
                 })
                 .filter(Objects::nonNull)

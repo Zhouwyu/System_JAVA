@@ -26,6 +26,9 @@ public class OrderWithProducts {
     @TableField("unit_price")
     private BigDecimal unitPrice; // 购买时单价
 
+    @TableField("sale_price")
+    private BigDecimal salePrice; // 成交价
+
     // 可选：关联对象（非数据库字段）
     @TableField(exist = false)
     private Product product; // 商品详情

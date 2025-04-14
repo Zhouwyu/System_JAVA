@@ -13,10 +13,10 @@ public interface OrderWithProductsMapper extends BaseMapper<OrderWithProducts>{
     // 自定义批量插入方法
     @Insert({
             "<script>",
-            "INSERT INTO order_products (order_num, product_id, quantity, unit_price)",
+            "INSERT INTO order_products (order_num, product_id, quantity, unit_price, sale_price)",
             "VALUES ",
             "<foreach collection='list' item='item' separator=','>",
-            "   (#{item.orderNo}, #{item.productId}, #{item.quantity}, #{item.unitPrice})",
+            "   (#{item.orderNo}, #{item.productId}, #{item.quantity}, #{item.unitPrice}, #{item.salePrice})",
             "</foreach>",
             "</script>"
     })
