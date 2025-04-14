@@ -79,11 +79,11 @@
       <el-button type="warning" @click="handleBatchDelete">批量删除</el-button>
     </div>
 
-    <!-- 新增/编辑抽屉 -->
+    <!-- 新增抽屉 -->
     <el-drawer v-model="drawerVisible" direction="rtl" size="50%" :before-close="handleBeforeClose"
                @close="resetForm">
       <template #header>
-        <h4>{{ editMode ? '编辑订单信息' : '新建订单信息' }}</h4>
+        <h4>新建订单信息</h4>
       </template>
 
       <template #default>
@@ -117,31 +117,6 @@
               </el-descriptions-item>
             </el-descriptions>
           </el-form-item>
-
-          <!--          <el-form-item label="商品清单" prop="products">-->
-          <!--            <div class="product-selector">-->
-          <!--              <el-select-->
-          <!--                  v-model="form.productId"-->
-          <!--                  placeholder="选择商品"-->
-          <!--                  @change="handleProductSelect"-->
-          <!--              >-->
-          <!--                <el-option-->
-          <!--                    v-for="p in data.productOptions"-->
-          <!--                    :key="p.value"-->
-          <!--                    :value="p.value"-->
-          <!--                    :label="`${p.label} | 库存: ${p.stock} | 单价: ¥${p.price}`"-->
-          <!--                    :disabled="p.stock <= 0"-->
-          <!--                />-->
-          <!--              </el-select>-->
-
-          <!--              <el-input-number-->
-          <!--                  v-model="form.quantity"-->
-          <!--                  :min="1"-->
-          <!--                  :max="selectedProductStock"-->
-          <!--                  @change="calculateTotal"-->
-          <!--              />-->
-          <!--            </div>-->
-          <!--          </el-form-item>-->
           <el-form-item label="商品清单" prop="products">
             <div class="product-selector">
               <el-select
@@ -189,17 +164,6 @@
           </el-form-item>
 
           <el-row :gutter="20">
-            <!--            <el-col :span="8">-->
-            <!--              <el-form-item label="商品单价" prop="price">-->
-            <!--                <el-input-number-->
-            <!--                    v-model="form.price"-->
-            <!--                    :min="0"-->
-            <!--                    :precision="2"-->
-            <!--                    :disabled="true"-->
-            <!--                    style="width: 100%"-->
-            <!--                />-->
-            <!--              </el-form-item>-->
-            <!--            </el-col>-->
             <el-col :span="8">
               <el-form-item label="总金额" prop="totalPrice">
                 <el-input-number
@@ -481,7 +445,6 @@ const rules = {
 // 抽屉控制
 const drawerVisible = ref(false)
 const formRef = ref()
-const editMode = ref(false)
 const currentEditId = ref(null)
 const initialFormState = ref(null) // 保存表单初始状态
 const hasUnsavedChanges = ref(false) // 跟踪修改状态
@@ -528,7 +491,6 @@ watch(() => data.customerOptions, (newVal) => {
 // 新增/编辑操作
 const handleAdd = () => {
   resetForm()
-  editMode.value = false
   drawerVisible.value = true
   // 记录初始状态
   initialFormState.value = JSON.parse(JSON.stringify(form))
@@ -553,50 +515,6 @@ const handleBeforeClose = (done) => {
   }
 }
 
-/**
- * 暂时废弃编辑功能
- */
-const handleEdit = async (row) => {
-  editMode.value = true
-  currentEditId.value = row.orderId
-
-  // 重置表单
-  resetForm()
-
-  // 基础字段赋值
-  form.customerId = row.customerId
-  form.remark = row.remark
-  form.totalPrice = row.totalPrice
-  form.shipmentDate = row.shipmentDate
-
-  // 加载客户详情
-  await handleCustomerChange(row.customerId)
-
-  // 处理商品数据（关键修改）
-  if (row.products?.length) {
-    form.selectedProducts = row.products.map(p => {
-      // 精确匹配商品对象
-      const fullProduct = data.productOptions.find(
-          op => op.productId === p.productId
-      )
-      if (!fullProduct) {
-        console.warn('商品不存在:', p.productId)
-        return null
-      }
-      return fullProduct
-    }).filter(Boolean) // 过滤掉未找到的商品
-
-    // 初始化商品数量（深拷贝）
-    form.products = form.selectedProducts.map(sp => ({
-      ...sp,
-      quantity: row.products.find(p => p.productId === sp.productId)?.quantity || 1
-    }))
-  }
-
-  // 强制视图更新
-  await nextTick()
-  drawerVisible.value = true
-}
 
 // 重置表单内容
 const resetForm = () => {
@@ -734,13 +652,12 @@ const submitForm = async () => {
       shipmentDate: form.shipmentDate,
       operator: localStorage.getItem("username")
     }
-    if (editMode.value) payload.oderId = currentEditId.value
     // 4. 提交请求
-    const url = editMode.value ? `/order/update` : '/order/add'
+    const url = '/order/add'
     const res = await request.post(url, payload)
     // 5. 处理成功逻辑
     if (res.code === '200') {
-      ElMessage.success(editMode.value ? '修改成功' : '新增成功')
+      ElMessage.success('新增成功')
       // 提交成功后重置初始状态
       initialFormState.value = null
       drawerVisible.value = false
@@ -1075,14 +992,6 @@ const exportToPDF = async () => {
   }
 }
 
-/* 调整对话框层级 */
-:deep(.el-dialog) {
-  z-index: 3002 !important;
-}
-
-:deep(.el-overlay) {
-  z-index: 3001 !important;
-}
 
 /* 确保表格容器不会限制溢出 */
 .el-table__body-wrapper {
