@@ -191,6 +191,8 @@
                 placeholder="选择出货时间"
                 value-format="YYYY-MM-DD HH:mm:ss"
                 style="width: 100%"
+                :disabled-date="disabledDate"
+                @change="handleDateChange"
             />
           </el-form-item>
 
@@ -516,7 +518,51 @@ const rules = {
       trigger: 'change'
     }
   ],
-  shipmentDate: [{required: true, message: '请选择出货时间', trigger: 'change'}]
+  shipmentDate: [
+    {
+      required: true,
+      message: '请选择出货时间',
+      trigger: 'change'
+    },
+    {
+      validator: (_, value, callback) => {
+        if (!value) return callback()
+
+        const selected = new Date(value)
+        const now = new Date()
+
+        // 允许1分钟缓冲时间
+        if (selected.getTime() + 60000 < now.getTime()) {
+          callback(new Error('必须选择当前时间之后的时间'))
+        } else {
+          callback()
+        }
+      },
+      trigger: ['change', 'blur']
+    }
+  ]
+}
+
+// 新增日期禁用函数
+const disabledDate = (date) => {
+  // 禁用今天之前的日期（以当前时间计算）
+  const now = new Date()
+  now.setHours(0, 0, 0, 0) // 当天0点
+  return date.getTime() < now.getTime()
+}
+
+// 新增时间校验处理
+const handleDateChange = (value) => {
+  if (!value) return
+
+  const selected = new Date(value)
+  const now = new Date()
+
+  // 精确到秒的时间校验
+  if (selected.getTime() < now.getTime()) {
+    ElMessage.warning('不能选择当前时间之前的日期时间')
+    form.shipmentDate = '' // 清空非法选择
+  }
 }
 
 
