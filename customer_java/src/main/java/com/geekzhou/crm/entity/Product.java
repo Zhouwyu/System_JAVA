@@ -64,11 +64,15 @@ public class Product {
 
     @Version
     @TableField("version")
-    private Integer version; //乐观锁版本号，之后可能要用到，现在暂时注释
+    private Integer version; //乐观锁版本号
 
     // 逻辑删除（根据业务需求添加）
     @TableField(value = "is_deleted", fill = FieldFill.INSERT)
     private Integer isDeleted;
+
+    // 单位
+    @TableField("unit")
+    private String unit;
 
     // 库存校验方法
     public void checkStock(int required) {

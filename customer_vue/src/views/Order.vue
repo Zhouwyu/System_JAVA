@@ -362,7 +362,12 @@
               </el-button>
 
               <el-dialog v-model="reviseDialogVisible" title="订单修订" width="65%">
+                <!-- 增加版本提示 -->
+                <el-alert type="warning" show-icon :closable="false">
+                  当前修改版本：{{ reviseForm.version }} | 最后修改时间：{{ formatDate(reviseForm.updateTime) }}
+                </el-alert>
                 <el-form :model="reviseForm">
+                  <el-input type="hidden" v-model="reviseForm.version"/>
                   <!-- 折扣类型选择 -->
                   <el-form-item label="折扣类型">
                     <el-radio-group v-model="reviseForm.discountType">
@@ -394,7 +399,7 @@
                   <!-- 商品级折扣 -->
                   <el-table :data="reviseForm.products">
                     <el-table-column label="商品名称" prop="productName"/>
-                    <el-table-column label="单价" prop="price"/>
+                    <el-table-column label="单价" prop="salePrice"/>
                     <el-table-column label="数量">
                       <template #default="{row}">
                         <el-input-number
@@ -414,13 +419,48 @@
                         />
                       </template>
                     </el-table-column>
+                    <!-- 新增小计列 -->
+                    <el-table-column label="小计" width="120">
+                      <template #default="{row}">
+                        ¥{{ ((row.salePrice - row.itemDiscount) * row.quantity).toFixed(2) }}
+                      </template>
+                    </el-table-column>
                   </el-table>
+                  <!-- 在表格下方添加金额汇总 -->
+                  <div class="price-summary">
+                    <el-row :gutter="20">
+                      <el-col :span="12">
+                        <div class="total-line">
+                          <span class="label">商品合计：</span>
+                          <span class="value">¥{{ calculateSubtotal.toFixed(2) }}</span>
+                        </div>
+                        <div v-if="reviseForm.discountType !== 0" class="total-line">
+                          <span class="label">折扣金额：</span>
+                          <span class="value discount">
+          {{ discountDisplay }}
+        </span>
+                        </div>
+                        <div class="total-line grand-total">
+                          <span class="label">应付总额：</span>
+                          <span class="value">¥{{ calculateGrandTotal.toFixed(2) }}</span>
+                        </div>
+                      </el-col>
+                    </el-row>
+                  </div>
                 </el-form>
 
                 <template #footer>
                   <el-button @click="reviseDialogVisible = false">取消</el-button>
                   <el-button type="primary" @click="submitRevision">提交修订</el-button>
                 </template>
+
+                <!-- 增加历史记录查看 -->
+                <div class="history-link">
+                  <el-link type="primary" @click="showRevisionHistory">
+                    <el-icon><Clock /></el-icon>
+                    查看修订历史
+                  </el-link>
+                </div>
               </el-dialog>
               <el-button
                   v-if="scope.row.status === 1"
@@ -460,7 +500,7 @@
 </template>
 
 <script setup>
-import {reactive, ref, onMounted, nextTick, watch} from 'vue'
+import {reactive, ref, onMounted, nextTick, watch, computed} from 'vue'
 import {dayjs, ElMessage, ElMessageBox} from 'element-plus'
 import request from '@/utils/request'
 import jsPDF from "jspdf";
@@ -565,6 +605,35 @@ const handleDateChange = (value) => {
   }
 }
 
+// 计算小计总和
+const calculateSubtotal = computed(() => {
+  return reviseForm.value.products.reduce((sum, item) => {
+    return sum + (item.salePrice - item.itemDiscount) * item.quantity
+  }, 0)
+})
+
+// 计算折扣显示
+const discountDisplay = computed(() => {
+  if (reviseForm.value.discountType === 1) {
+    return `${reviseForm.value.discountRate}% OFF`
+  }
+  if (reviseForm.value.discountType === 2) {
+    return `-¥${reviseForm.value.discountAmount.toFixed(2)}`
+  }
+  return '-'
+})
+
+// 计算最终金额
+const calculateGrandTotal = computed(() => {
+  let total = calculateSubtotal.value
+  if (reviseForm.value.discountType === 1) {
+    total *= (1 - reviseForm.value.discountRate / 100)
+  } else if (reviseForm.value.discountType === 2) {
+    total -= reviseForm.value.discountAmount
+  }
+  return Math.max(total, 0) // 防止负数
+})
+
 
 // 抽屉控制
 const drawerVisible = ref(false)
@@ -636,7 +705,6 @@ const handleBeforeClose = (done) => {
     done()
   }
 }
-
 
 // 重置表单内容
 const resetForm = () => {
@@ -738,11 +806,12 @@ const handleCustomerChange = async (customerId) => {
 }
 
 // 库存预检查
-const stockPreCheck = async () => {
+const stockPreCheck = async (isRevision=false) => {
   // 提取需要检查的商品数据
   const checkItems = form.products.map(item => ({
     productId: item.productId,
-    quantity: item.quantity
+    quantity: item.quantity,
+    isRevision // 标记是否为修订操作
   }))
   try {
     await request.post('/order/precheck', checkItems)
@@ -907,7 +976,6 @@ const handleShip = async (row) => {
   }
 }
 
-
 // 在setup()中添加响应式数据和状态映射
 const detailDialogVisible = ref(false)
 
@@ -920,13 +988,16 @@ const reviseForm = ref({
   discountType: 0,
   discountRate: 0,
   discountAmount: 0,
+  version: 0,
+  updateTime: '',
   products: [
     {
       productId: null,
       productName: '',
-      price: 0,
-      quantity: 1,
-      unitPrice: 0, // 购买时单价（可能不同于商品当前价格）
+      salePrice: 0, // 成交价
+      originalQuantity: 1,
+      newQuantity: 1,
+      price: 0, // 原价
     }
   ]
 })
@@ -1033,6 +1104,7 @@ const handleRevise = async (order) => {
         // currentStock: p.stock
       }))
     }
+    console.table(reviseForm.value.products)
     reviseDialogVisible.value = true
   } catch (error) {
     ElMessage.error('获取订单详情失败')
@@ -1043,8 +1115,8 @@ const handleRevise = async (order) => {
 const submitRevision = async () => {
   try {
     // 计算新总金额
-    const newTotal = reviseForm.products.reduce((total, item) => {
-      const itemTotal = (item.price - item.itemDiscount) * item.quantity
+    const newTotal = reviseForm.value.products.reduce((total, item) => {
+      const itemTotal = (item.salePrice - item.itemDiscount) * item.quantity
       return total + itemTotal
     }, 0)
 
@@ -1056,15 +1128,12 @@ const submitRevision = async () => {
       finalTotal -= reviseForm.discountAmount
     }
 
-    // 创建新订单
     const res = await request.post('/order/revise', {
       ...reviseForm,
       totalPrice: finalTotal,
       operator: localStorage.getItem('username')
     })
 
-    // 处理原订单状态
-    await request.post(`/order/revoke/${reviseForm.originalOrderId}`)
 
     ElMessage.success('订单修订成功')
     load()
@@ -1228,5 +1297,42 @@ const exportToPDF = async () => {
   align-items: center;
   width: 100%;
   padding-right: 10px;
+}
+
+.price-summary {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.total-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+
+  .label {
+    color: #606266;
+  }
+
+  .value {
+    color: #f56c6c;
+    font-weight: 500;
+
+    &.discount {
+      color: #67c23a;
+    }
+  }
+}
+
+.grand-total {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #ebeef5;
+
+  .value {
+    font-size: 16px;
+  }
 }
 </style>

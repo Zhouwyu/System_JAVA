@@ -20,6 +20,8 @@ public class ProductQueryDto extends Product implements Serializable {
     private LocalDate beginPurchaseDate;
     @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate endPurchaseDate;
+    // 库存阈值查询
+    private Integer stockThreshold;
     // 分页参数（需单独处理）
     private Integer pageNum = 1;
     private Integer pageSize = 10;

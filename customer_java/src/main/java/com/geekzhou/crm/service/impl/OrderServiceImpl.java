@@ -128,8 +128,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             LocalDate endDateTime = queryDateRangeEnd(queryDto.getEndShipmentDate());
             wrapper.le("o.shipment_date", endDateTime);
         }
-        // 4. 排序规则（示例按出货时间升序）
-        wrapper.orderByAsc("o.shipment_date");
+        // 4. 排序规则（优先未出货的，出货时间早的）
+        wrapper.orderByAsc("o.status","o.shipment_date");
         // 执行自定义查询
         return (Page<OrderShowInfoVo>) orderMapper.selectWithCustomer(page, wrapper);
     }

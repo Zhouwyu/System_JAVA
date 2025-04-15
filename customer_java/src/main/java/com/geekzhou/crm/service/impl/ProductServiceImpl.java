@@ -54,6 +54,10 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                 Product::getSupplierContact,
                 queryDTO.getContact());
 
+        if (queryDTO.getStockThreshold() != null) {
+            wrapper.le(Product::getStockQuantity, queryDTO.getStockThreshold());
+        }
+
         // 进货日期范围查询
         if (queryDTO.getBeginPurchaseDate() != null) {
             wrapper.ge(Product::getPurchaseDate, queryDTO.getBeginPurchaseDate());

@@ -28,28 +28,14 @@
             <span style="font-size: 14px; padding-left: 10px">高级筛选</span>
           </template>
           <el-row :gutter="10" align="middle">
-            <!--            <el-col :span="6">-->
-            <!--              <el-input-->
-            <!--                  v-model="data.queryParams.minPrice"-->
-            <!--                  placeholder="最低价格"-->
-            <!--                  clearable-->
-            <!--              />-->
-            <!--            </el-col>-->
-            <!--            <el-col :span="6">-->
-            <!--              <el-input-->
-            <!--                  v-model="data.queryParams.maxPrice"-->
-            <!--                  placeholder="最高价格"-->
-            <!--                  clearable-->
-            <!--              />-->
-            <!--            </el-col>-->
-            <el-col :span="6">
+            <el-col :span="5">
               <el-input
                   v-model="data.queryParams.supplier"
                   placeholder="供应商渠道"
                   clearable
               />
             </el-col>
-            <el-col :span="6">
+            <el-col :span="5">
               <el-input
                   v-model="data.queryParams.contact"
                   placeholder="供应商联系方式"
@@ -65,6 +51,20 @@
                   end-placeholder="进货结束日期"
                   style="width: 100%"
               />
+            </el-col>
+            <!-- 新增库存筛选 -->
+            <el-col :span="6">
+              <el-input
+                  v-model="data.queryParams.stockThreshold"
+                  placeholder="最大库存筛选"
+                  clearable
+                  type="number"
+                  :min="0"
+              >
+                <template #prepend>
+                  <span style="width: 30px">≤</span>
+                </template>
+              </el-input>
             </el-col>
           </el-row>
         </el-collapse-item>
@@ -107,6 +107,15 @@
                     v-model="form.stockQuantity"
                     :min="0"
                     style="width: 100%"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="16">
+              <el-form-item label="单位" prop="unit">
+                <el-input
+                    v-model="form.unit"
+                    placeholder="请输入单位（如件、个）"
+                    clearable
                 />
               </el-form-item>
             </el-col>
@@ -171,6 +180,7 @@
     <div class="card" style="margin-top: 5px">
       <el-table
           :data="data.tableData"
+          :row-class-name="handleRowClass"
           @selection-change="handleSelectionChange"
           border
           stripe
@@ -180,7 +190,21 @@
         <el-table-column label="单价" prop="price" width="120">
           <template #default="{row}">¥{{ row.price.toFixed(2) }}</template>
         </el-table-column>
-        <el-table-column label="库存" prop="stockQuantity" width="100"/>
+        <el-table-column label="单位" prop="unit" width="120">
+          <template #default="{row}">{{ row.unit || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="库存" prop="stockQuantity" width="100">
+          <template #default="{row}">
+    <span :class="{ 'low-stock': row.stockQuantity <= 50 }">
+      {{ row.stockQuantity }}
+      <el-tooltip v-if="row.stockQuantity <= 50" content="低库存预警" placement="top">
+        <el-icon color="#F56C6C" :size="14" style="vertical-align: middle">
+          <Warning/>
+        </el-icon>
+      </el-tooltip>
+    </span>
+          </template>
+        </el-table-column>
         <el-table-column label="进货日期" prop="purchaseDate" width="150"/>
         <el-table-column label="供应商渠道" prop="supplierChannel" width="200"/>
         <el-table-column label="供应商联系方式" prop="supplierContact" width="200"/>
@@ -234,6 +258,7 @@ const data = reactive({
     supplier: '',
     contact: '',
     dateRange: [],
+    stockThreshold: '',
     pageNum: 1,
     pageSize: 10
   },
@@ -253,10 +278,14 @@ const form = reactive({
   productImage: '',
   imageType: '',
   imageSize: 0,
-  tempImageUrl: null     // 新增临时URL存储
+  tempImageUrl: null,     // 新增临时URL存储
+  unit: ''
 })
 
 const rules = {
+  unit: [
+    { max: 10, message: '单位长度不能超过10个字符', trigger: 'blur' }
+  ],
   productName: [{required: true, message: '请输入商品名称', trigger: 'blur'}],
   price: [{required: true, message: '请输入商品价格', trigger: 'blur'}],
   stockQuantity: [{required: true, message: '请输入库存数量', trigger: 'blur'}],
@@ -318,7 +347,7 @@ const handleUploadSuccess = (response) => {
 
 // 组件卸载时清理
 onBeforeUnmount(() => {
-  if(form.tempImageUrl?.startsWith('blob:')) {
+  if (form.tempImageUrl?.startsWith('blob:')) {
     URL.revokeObjectURL(form.tempImageUrl)
   }
 })
@@ -388,12 +417,12 @@ const handleEdit = (row) => {
 }
 
 const resetForm = () => {
-  if(form.tempImageUrl?.startsWith('blob:')) {
+  if (form.tempImageUrl?.startsWith('blob:')) {
     URL.revokeObjectURL(form.tempImageUrl)
   }
   formRef.value?.resetFields()
   Object.keys(form).forEach(key => form[key] = '')
-  form["tempImageUrl"]=null
+  form["tempImageUrl"] = null
 }
 
 
@@ -421,7 +450,6 @@ const handleCancel = async () => {
 // 提交表单
 const submitForm = async () => {
   try {
-    console.log("看看提交的是什么："+form.productImage)
     if (!form.productImage || form.productImage.startsWith('blob:')) {
       ElMessage.error('请先完成图片上传')
       return
@@ -448,6 +476,11 @@ const submitForm = async () => {
   } catch (error) {
     console.error('提交失败:', error)
   }
+}
+
+// 库存低于50显红样式
+const handleRowClass = ({row}) => {
+  return row.stockQuantity <= 50 ? 'low-stock-row' : ''
 }
 
 // 批量删除操作逻辑
@@ -583,5 +616,29 @@ onMounted(() => {
 /* 调整表格行高度避免挤压 */
 .el-table .cell {
   padding: 4px 0;
+}
+
+/*低库存样式修改*/
+:deep(.el-table .low-stock-row) {
+  & td {
+    background-color: #fff0f0 !important;
+    color: #f56c6c !important;
+  }
+
+  .cell {
+    position: relative;
+
+    &::after {
+      color: #ff4d4d;
+      position: absolute;
+      right: 5px;
+      font-weight: 700;
+    }
+  }
+}
+:deep(.el-table .low-stock-row:hover) {
+  & td {
+    background-color: #ffe0e0 !important;
+  }
 }
 </style>
