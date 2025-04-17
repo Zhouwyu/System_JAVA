@@ -14,4 +14,6 @@ public class ProductItemDetailVo implements Serializable {
     private BigDecimal price;       // 商品单价
     private Integer quantity;       // 购买数量
     private BigDecimal salePrice;   // 成交价
+    private Integer stockQuantity; // 库存
+    private BigDecimal itemDiscount; // 单个折扣
 }

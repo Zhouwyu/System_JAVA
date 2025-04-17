@@ -9,9 +9,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.geekzhou.crm.common.OrderShipmentStatus;
-import com.geekzhou.crm.dto.OrderAddDto;
-import com.geekzhou.crm.dto.OrderQueryDto;
-import com.geekzhou.crm.dto.OrderWithProductsDto;
+import com.geekzhou.crm.dto.*;
 import com.geekzhou.crm.entity.*;
 import com.geekzhou.crm.exception.CustomException;
 import com.geekzhou.crm.mapper.mapstruct.OrderToShowInfoVoMapper;
@@ -306,6 +304,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         orderDetailVo.setRemark(order.getRemark());
         orderDetailVo.setShipmentDate(order.getShipmentDate());
         orderDetailVo.setStatus(order.getStatus());
+        orderDetailVo.setVersion(order.getVersion());
+        orderDetailVo.setDiscountType(order.getDiscountType());
+        orderDetailVo.setDiscountRate(order.getDiscountRate());
+        orderDetailVo.setDiscountAmount(order.getDiscountAmount());
         // 获取客户信息
         Customer customer = customerMapper.selectById(order.getCustomerId());
         if (customer != null) {
@@ -329,7 +331,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                                     product.getProductName(),
                                     owp.getUnitPrice(),
                                     owp.getQuantity(),
-                                    owp.getSalePrice()
+                                    owp.getSalePrice(),
+                                    product.getStockQuantity(),
+                                    owp.getItemDiscount()
                             ) : null;
                 })
                 .filter(Objects::nonNull)
@@ -368,5 +372,82 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         order.setStatus(OrderShipmentStatus.SHIPPED.getCode());
         orderMapper.updateById(order);
         return 1;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Integer reviseOrder(OrderReviseDto orderReviseDto) {
+        StaticLog.info("看看修改订单接收到的：{}", orderReviseDto);
+        // 1、获取原始订单
+        Order originalOrder  = orderMapper.selectById(orderReviseDto.getOriginalOrderId());
+        if (originalOrder == null) {
+            throw new CustomException("601", "原订单不存在");
+        }
+        if (!originalOrder.getVersion().equals(orderReviseDto.getVersion())) {
+            throw new CustomException("602", "原订单已被修改，请刷新后重试！");
+        }
+        if (originalOrder.getStatus() != OrderShipmentStatus.PENDING.getCode()) {
+            throw new CustomException("603", "只有待出货订单允许修订！");
+        }
+        // 2、更新订单基本信息
+        // 更新出货日期
+        if(orderReviseDto.getIsShipmentChanged()) {
+            originalOrder.setShipmentDate(LocalDateTime.parse(orderReviseDto.getNewShipmentDate(),
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        }
+        // 总价更新
+        originalOrder.setTotalPrice(orderReviseDto.getTotalPrice());
+        // 备注更新
+        originalOrder.setRemark(orderReviseDto.getRevisionRemark());
+        // 更新时间
+        originalOrder.setUpdateTime(LocalDateTime.now());
+        // 操作员更新
+        originalOrder.setOperator(orderReviseDto.getOperator());
+        // 折扣类型更新
+        originalOrder.setDiscountType(orderReviseDto.getDiscountType());
+        // 打折比例更新
+        originalOrder.setDiscountRate(orderReviseDto.getDiscountRate());
+        // 打折金额更新
+        originalOrder.setDiscountAmount(orderReviseDto.getDiscountAmount());
+        if (orderMapper.updateById(originalOrder) == 0) {
+            throw new CustomException("604","订单更新失败");
+        }
+        // 3. 处理商品修订
+        for (ProductsReviseDto reviseItem : orderReviseDto.getProductsRevise()) {
+            // 获取原订单商品记录
+            OrderWithProducts orderProduct = orderWithProductsMapper.selectByOrderAndProduct(
+                    originalOrder.getOrderNo(),
+                    reviseItem.getProductId()
+            );
+
+            if (orderProduct == null) {
+                throw new CustomException("605","订单商品不存在: " + reviseItem.getProductId());
+            }
+
+            // 计算库存变化量
+            int stockDelta = orderProduct.getQuantity() - reviseItem.getQuantity();
+
+            // 更新订单商品关联
+            // 商品数量更新
+            orderProduct.setQuantity(reviseItem.getQuantity());
+            // 商品成交价更新
+            orderProduct.setSalePrice(reviseItem.getSalePrice());
+            // 单品折扣更新
+            orderProduct.setItemDiscount(reviseItem.getItemDiscount());
+            orderWithProductsMapper.updateById(orderProduct);
+
+            // 更新商品库存
+            Product product = productMapper.selectById(reviseItem.getProductId());
+            StaticLog.info("看看商品是什么：{}", product);
+            int newStock = product.getStockQuantity() + stockDelta;
+            StaticLog.info("看看库存是什么：{}", newStock);
+            if (newStock < 0) {
+                throw new CustomException("606","商品库存不足: " + product.getProductName());
+            }
+            product.setStockQuantity(newStock);
+            productMapper.updateById(product);
+        }
+
+        return originalOrder.getVersion();
     }
 }

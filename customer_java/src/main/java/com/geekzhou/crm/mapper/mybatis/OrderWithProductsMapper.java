@@ -5,6 +5,7 @@ import com.geekzhou.crm.entity.OrderWithProducts;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -21,4 +22,8 @@ public interface OrderWithProductsMapper extends BaseMapper<OrderWithProducts>{
             "</script>"
     })
     int insertBatch(@Param("list") List<OrderWithProducts> list);
+
+    // OrderWithProductsMapper.java
+    @Select("SELECT * FROM order_products WHERE order_num = #{orderNo} AND product_id = #{productId}")
+    OrderWithProducts selectByOrderAndProduct(@Param("orderNo") String orderNo, @Param("productId") Integer productId);
 }

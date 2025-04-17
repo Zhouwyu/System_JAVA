@@ -17,6 +17,10 @@ public class OrderDetailVo implements Serializable {
     private Integer status;           // 订单状态 (1:待出货, 2:已出货...)
     private String remark;            // 备注
     private LocalDateTime updateTime; // 最后修改时间
+    private Integer version;
+    private Integer discountType; // 打折类型
+    private Integer discountRate; // 打折比例
+    private BigDecimal discountAmount; // 打折金额
 
     private CustomerDetailVo customer;      // 客户信息
     private OperatorDetailVo operator;     // 操作员信息

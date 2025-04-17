@@ -4,6 +4,7 @@ import cn.hutool.log.StaticLog;
 import com.geekzhou.crm.common.Result;
 import com.geekzhou.crm.dto.OrderAddDto;
 import com.geekzhou.crm.dto.OrderQueryDto;
+import com.geekzhou.crm.dto.OrderReviseDto;
 import com.geekzhou.crm.dto.OrderWithProductsDto;
 import com.geekzhou.crm.entity.Order;
 import com.geekzhou.crm.entity.Product;
@@ -73,5 +74,10 @@ public class OrderController {
     public Result setOrderShip(@PathVariable Integer orderId) {
         Integer updateRows = orderService.setOrderShip(orderId);
         return Result.success(updateRows);
+    }
+
+    @PostMapping("/revise")
+    public Result reviseOrder(@RequestBody OrderReviseDto orderReviseDto) {
+        return Result.success(orderService.reviseOrder(orderReviseDto));
     }
 }

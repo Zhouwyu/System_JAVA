@@ -66,6 +66,19 @@ public class Order {
     @TableField("operator")
     private String operator; // 操作员
 
+    @Version
+    @TableField("version")
+    private Integer version; // 版本控制，不为0表示订单被修改过
+
+    @TableField("discount_type")
+    private Integer discountType; // 打折类型，0为不打折，1为百分比，2为固定金额
+
+    @TableField("discount_rate")
+    private Integer discountRate; // 百分比
+
+    @TableField("discount_amount")
+    private BigDecimal discountAmount; // 固定金额
+
     // 关联字段示例（非数据库字段）
     @TableField(exist = false)
     private Customer customer;

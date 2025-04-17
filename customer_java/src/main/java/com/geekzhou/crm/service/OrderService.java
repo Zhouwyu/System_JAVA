@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.geekzhou.crm.dto.OrderAddDto;
 import com.geekzhou.crm.dto.OrderQueryDto;
+import com.geekzhou.crm.dto.OrderReviseDto;
 import com.geekzhou.crm.entity.Order;
 import com.geekzhou.crm.vo.OrderDetailVo;
 import com.geekzhou.crm.vo.OrderShowInfoVo;
@@ -24,4 +25,6 @@ public interface OrderService extends IService<Order> {
     OrderDetailVo getOrderDetail(Integer orderId);
 
     Integer setOrderShip(Integer orderId);
+
+    Integer reviseOrder(OrderReviseDto orderReviseDto);
 }

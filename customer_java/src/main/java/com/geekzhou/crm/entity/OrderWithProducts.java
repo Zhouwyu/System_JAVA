@@ -29,7 +29,7 @@ public class OrderWithProducts {
     @TableField("sale_price")
     private BigDecimal salePrice; // 成交价
 
-    // 可选：关联对象（非数据库字段）
-    @TableField(exist = false)
-    private Product product; // 商品详情
+    @TableField("item_discount")
+    private BigDecimal itemDiscount; // 单品折扣
+
 }
