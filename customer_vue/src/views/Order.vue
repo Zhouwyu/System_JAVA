@@ -396,7 +396,8 @@
                 修订订单
               </el-button>
 
-              <el-dialog v-model="reviseDialogVisible" title="订单修订" width="65%">
+              <el-dialog v-model="reviseDialogVisible" title="订单修订" width="65%" append-to-body
+                         modal-append-to-body>
                 <!-- 增加版本提示 -->
                 <el-alert type="warning" show-icon :closable="false">
                   当前修改版本：{{ reviseForm.version }} | 最后修改时间：{{ formatDate(reviseForm.updateTime) }}
@@ -515,12 +516,36 @@
                 <!-- 在金额汇总区域后添加分隔线 -->
                 <el-divider />
                 <!-- 增加历史记录查看 -->
-                <div class="history-link">
+                <div class="history-link" v-if="false">
                   <el-link type="primary" @click="showRevisionHistory">
                     <el-icon><Clock /></el-icon>
                     查看修订历史
                   </el-link>
                 </div>
+                <el-dialog
+                    v-model="historyDialogVisible"
+                    title="修订历史记录"
+                    width="70%">
+                  <el-timeline>
+                    <el-timeline-item
+                        v-for="rev in revisionHistory"
+                        :key="rev.revisionId"
+                        :timestamp="formatDate(rev.createTime)"
+                        placement="top">
+                      <el-card>
+                        <h4>版本 {{ rev.revisionNumber }} - {{ rev.operator }}</h4>
+                        <div v-if="rev.revisionRemark" class="revision-remark">
+                          备注：{{ rev.revisionRemark }}
+                        </div>
+                        <el-collapse>
+                          <el-collapse-item title="订单快照">
+                            <order-snapshot-view :data="rev.snapshot"/>
+                          </el-collapse-item>
+                        </el-collapse>
+                      </el-card>
+                    </el-timeline-item>
+                  </el-timeline>
+                </el-dialog>
               </el-dialog>
               <el-button
                   v-if="scope.row.status === 1"
@@ -1042,6 +1067,23 @@ const detailDialogVisible = ref(false)
 // 修订相关状态
 const reviseDialogVisible = ref(false)
 
+const historyDialogVisible = ref(false)
+const revisionHistory = ref([])
+
+// 查看修订历史
+const showRevisionHistory = async () => {
+  try {
+    const res = await request.get(`/order/${reviseForm.value.originalOrderId}/revisions`)
+    revisionHistory.value = res.data.map(item => ({
+      ...item,
+      snapshot: JSON.parse(item.revisionData)
+    }))
+    historyDialogVisible.value = true
+  } catch (error) {
+    ElMessage.error('获取修订历史失败')
+  }
+}
+
 const reviseForm = ref({
   originalOrderId: null,
   originalOrderNo: '',
@@ -1163,6 +1205,7 @@ const showOrderDetail = async (row) => {
 // 打开修订对话框
 const handleRevise = async (order) => {
   try {
+    reviseDialogVisible.value = true
     // 先获取完整订单数据
     const { data } = await request.get(`/order/detail/${order.orderId}`)
     // 填充修订表单
@@ -1185,10 +1228,9 @@ const handleRevise = async (order) => {
         currentStock: p.stockQuantity, // 当前单品库存
       }))
     }
-    console.table(reviseForm.value.products)
-    reviseDialogVisible.value = true
   } catch (error) {
     ElMessage.error('获取订单详情失败')
+    reviseDialogVisible.value = false
   }
 }
 
@@ -1508,5 +1550,13 @@ const exportToPDF = async () => {
 /* 标签排列优化 */
 .el-tag + .el-tag {
   margin-left: 5px;
+}
+
+:deep(.el-overlay) {
+  z-index: 2000 !important;
+}
+.el-table__body-wrapper {
+  overflow-x: auto;
+  position: relative;
 }
 </style>

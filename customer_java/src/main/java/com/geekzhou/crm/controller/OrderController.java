@@ -42,11 +42,6 @@ public class OrderController {
         return Result.success(orderService.batchDelOrder(ids));
     }
 
-    @PostMapping("/update")
-    public Result updateOrder(@RequestBody Order order) {
-        return Result.success(orderService.updateOrder(order));
-    }
-
 
     @GetMapping("/detail/{orderId}")
     public Result getOrderDetail(@PathVariable Integer orderId) {
@@ -79,5 +74,13 @@ public class OrderController {
     @PostMapping("/revise")
     public Result reviseOrder(@RequestBody OrderReviseDto orderReviseDto) {
         return Result.success(orderService.reviseOrder(orderReviseDto));
+    }
+
+    /**
+     * 获取订单修订历史(未完成)
+     */
+    @GetMapping("/{orderId}/revisions")
+    public Result getOrderRevisionsHistory(@PathVariable Integer orderId) {
+        return Result.success(orderService.getOrderRevisionHistory(orderId));
     }
 }

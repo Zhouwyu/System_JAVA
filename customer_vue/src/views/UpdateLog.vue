@@ -4,7 +4,7 @@
       <template #header>
         <div class="card-header">
           <h2>系统更新日志</h2>
-          <el-tag type="info">当前版本: v1.3.1</el-tag>
+          <el-tag type="info">当前版本: v1.3.2</el-tag>
         </div>
       </template>
 
@@ -51,6 +51,14 @@
 import { ref } from 'vue';
 
 const changelog = ref([
+  {
+    version: 'v1.3.2',
+    date: '2025-04-17',
+    changes: [
+      { type: '优化', desc: '订单详情显示逻辑，增加了折扣显示' },
+      { type: '新增', desc: '修订订单功能，可以自定义折扣' },
+    ]
+  },
   {
     version: 'v1.3.1',
     date: '2025-04-14',

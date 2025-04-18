@@ -46,6 +46,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     private CustomerMapper customerMapper;
     @Autowired
     private UserMapper userMapper;
+    @Autowired
+    private OrderRevisionMapper orderRevisionMapper;
 
     /**
      * 暂时废弃不用
@@ -280,11 +282,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         return updateCount;
     }
 
-    @Override
-    public int updateOrder(Order order) {
-        return 0;
-    }
-
     /**
      * 获取订单详情
      */
@@ -449,5 +446,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         }
 
         return originalOrder.getVersion();
+    }
+
+    @Override
+    public OrderRevisionHistoryVo getOrderRevisionHistory(Integer orderId) {
+        return null;
     }
 }

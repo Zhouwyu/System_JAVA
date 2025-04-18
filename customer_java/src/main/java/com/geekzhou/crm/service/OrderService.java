@@ -6,7 +6,9 @@ import com.geekzhou.crm.dto.OrderAddDto;
 import com.geekzhou.crm.dto.OrderQueryDto;
 import com.geekzhou.crm.dto.OrderReviseDto;
 import com.geekzhou.crm.entity.Order;
+import com.geekzhou.crm.entity.OrderRevision;
 import com.geekzhou.crm.vo.OrderDetailVo;
+import com.geekzhou.crm.vo.OrderRevisionHistoryVo;
 import com.geekzhou.crm.vo.OrderShowInfoVo;
 
 import java.util.List;
@@ -20,11 +22,11 @@ public interface OrderService extends IService<Order> {
 
     int batchDelOrder(List<Integer> ids);
 
-    int updateOrder(Order order);
-
     OrderDetailVo getOrderDetail(Integer orderId);
 
     Integer setOrderShip(Integer orderId);
 
     Integer reviseOrder(OrderReviseDto orderReviseDto);
+
+    OrderRevisionHistoryVo getOrderRevisionHistory(Integer orderId);
 }
