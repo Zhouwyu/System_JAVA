@@ -458,7 +458,20 @@
 
                   <!-- 商品级折扣 -->
                   <el-table :data="reviseForm.products">
-                    <el-table-column label="商品名称" prop="productName"/>
+                    <el-table-column label="商品名称" prop="productName">
+                      <template #default="{row}">
+                        <div class="product-name-wrapper">
+                          <span>{{ row.productName }}</span>
+                          <el-tooltip
+                              v-if="row.isDeleted === 1"
+                              content="该商品已删除，禁止修改"
+                              placement="top"
+                          >
+                            <el-icon class="warning-icon"><Warning /></el-icon>
+                          </el-tooltip>
+                        </div>
+                      </template>
+                    </el-table-column>
                     <el-table-column label="成交价" prop="salePrice"/>
                     <el-table-column label="数量">
                       <template #default="{row}">
@@ -466,6 +479,7 @@
                             v-model="row.quantity"
                             :min="0"
                             :max="row.currentStock + row.originalQuantity"
+                            :disabled="row.isDeleted === 1"
                         />
                       </template>
                     </el-table-column>
@@ -1237,6 +1251,16 @@ const handleRevise = async (order) => {
 // 提交修订
 const submitRevision = async () => {
   try {
+    // 检查是否有修改已删除商品
+    const hasModifiedDeleted = reviseForm.value.products.some(p =>
+        p.isDeleted === 1 &&
+        (p.quantity !== p.originalQuantity)
+    )
+
+    if (hasModifiedDeleted) {
+      ElMessage.error('存在已删除商品的修改，请检查')
+      return
+    }
     // 计算新总金额
     const newTotal = reviseForm.value.products.reduce((total, item) => {
       const itemTotal = (item.salePrice - item.itemDiscount) * item.quantity
