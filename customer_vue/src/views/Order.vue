@@ -760,6 +760,11 @@ const filterProducts = (query) => {
 // 监听商品选项变化（当基础数据更新时同步）
 watch(() => data.productOptions, (newVal) => {
   filteredProducts.value = [...newVal]
+  // 更新已选商品的库存信息
+  form.products = form.products.map(p => {
+    const fresh = newVal.find(np => np.productId === p.productId)
+    return fresh ? {...p, stock: fresh.stock} : p
+  })
 }, {deep: true})
 
 // 客户过滤方法
@@ -846,6 +851,8 @@ const loadBaseData = async () => {
       // 补充完整商品信息
       ...p
     }))
+    // 强制更新过滤列表
+    filteredProducts.value = [...data.productOptions]
   } catch (error) {
     ElMessage.error('基础数据加载失败')
   }
@@ -1295,6 +1302,7 @@ const submitRevision = async () => {
       reviseDialogVisible.value = false
     }
     load()
+    loadBaseData()
   } catch (error) {
     ElMessage.error('修订失败：' + error.message)
   }
@@ -1582,5 +1590,31 @@ const exportToPDF = async () => {
 .el-table__body-wrapper {
   overflow-x: auto;
   position: relative;
+}
+
+.deleted-text {
+  color: #909399;
+  text-decoration: line-through;
+}
+
+.disabled-input {
+  opacity: 0.7;
+}
+
+.product-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warning-icon {
+  color: #e6a23c;
+  cursor: help;
+}
+
+/* 禁用状态的输入框样式 */
+:deep(.is-disabled .el-input__wrapper) {
+  background-color: #f5f7fa;
+  box-shadow: none;
 }
 </style>

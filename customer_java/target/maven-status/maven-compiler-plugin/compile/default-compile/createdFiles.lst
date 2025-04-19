@@ -1,4 +1,6 @@
 com\geekzhou\crm\entity\OrderWithProducts.class
+com\geekzhou\crm\entity\OrderRevision.class
+com\geekzhou\crm\service\OrderRevisionService.class
 com\geekzhou\crm\service\impl\ProductServiceImpl.class
 com\geekzhou\crm\entity\RolePermission.class
 com\geekzhou\crm\service\RoleService.class
@@ -35,6 +37,7 @@ com\geekzhou\crm\entity\RolePermission$CompositeKey.class
 com\geekzhou\crm\config\MyBatisPlusConfig.class
 com\geekzhou\crm\common\JwtInterceptor.class
 com\geekzhou\crm\common\Result.class
+com\geekzhou\crm\mapper\mybatis\OrderRevisionMapper.class
 com\geekzhou\crm\dto\OrderQueryDto.class
 com\geekzhou\crm\entity\Permission.class
 com\geekzhou\crm\mapper\mapstruct\ProductToVoMapper.class
@@ -46,6 +49,9 @@ com\geekzhou\crm\controller\FileController.class
 com\geekzhou\crm\utils\OrderUtils.class
 com\geekzhou\crm\service\OrderWithProductsService.class
 com\geekzhou\crm\vo\UserShowInfoVo.class
+com\geekzhou\crm\service\impl\OrderRevisionServiceImpl.class
+com\geekzhou\crm\vo\OrderRevisionHistoryVo.class
+com\geekzhou\crm\common\RevisionType.class
 com\geekzhou\crm\config\EnumDeserializer.class
 com\geekzhou\crm\controller\OrderController.class
 com\geekzhou\crm\mapper\mybatis\OrderWithProductsMapper.class

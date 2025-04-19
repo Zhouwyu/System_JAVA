@@ -3,6 +3,7 @@ E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\co
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\common\JwtInterceptor.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\common\OrderShipmentStatus.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\common\Result.java
+E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\common\RevisionType.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\config\CorsConfig.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\config\EnumConfig.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\config\EnumDeserializer.java
@@ -27,6 +28,7 @@ E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\dt
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\dto\UserQueryDto.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\entity\Customer.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\entity\Order.java
+E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\entity\OrderRevision.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\entity\OrderWithProducts.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\entity\Permission.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\entity\Product.java
@@ -41,17 +43,20 @@ E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\ma
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\mapper\mapstruct\UserToShowInfoVoMapper.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\mapper\mybatis\CustomerMapper.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\mapper\mybatis\OrderMapper.java
+E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\mapper\mybatis\OrderRevisionMapper.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\mapper\mybatis\OrderWithProductsMapper.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\mapper\mybatis\ProductMapper.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\mapper\mybatis\RoleMapper.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\mapper\mybatis\UserMapper.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\CustomerService.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\impl\CustomerServiceImpl.java
+E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\impl\OrderRevisionServiceImpl.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\impl\OrderServiceImpl.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\impl\OrderWithProductsServiceImpl.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\impl\ProductServiceImpl.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\impl\RoleServiceImpl.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\impl\UserServiceImpl.java
+E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\OrderRevisionService.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\OrderService.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\OrderWithProductsService.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\service\ProductService.java
@@ -65,6 +70,7 @@ E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\vo
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\vo\CustomerInfoVo.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\vo\OperatorDetailVo.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\vo\OrderDetailVo.java
+E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\vo\OrderRevisionHistoryVo.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\vo\OrderShowInfoVo.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\vo\ProductInfoVo.java
 E:\develop\custom_manager_system\customer_java\src\main\java\com\geekzhou\crm\vo\ProductItemDetailVo.java
