@@ -457,7 +457,20 @@
 
                   <!-- 商品级折扣 -->
                   <el-table :data="reviseForm.products">
-                    <el-table-column label="商品名称" prop="productName"/>
+                    <el-table-column label="商品名称" prop="productName">
+                      <template #default="{row}">
+                        <div class="product-name-wrapper">
+                          <span>{{ row.productName }}</span>
+                          <el-tooltip
+                              v-if="row.isDeleted === 1"
+                              content="该商品已删除，禁止修改"
+                              placement="top"
+                          >
+                            <el-icon class="warning-icon"><Warning /></el-icon>
+                          </el-tooltip>
+                        </div>
+                      </template>
+                    </el-table-column>
                     <el-table-column label="成交价" prop="salePrice"/>
                     <el-table-column label="数量">
                       <template #default="{row}">
@@ -465,6 +478,7 @@
                             v-model="row.quantity"
                             :min="0"
                             :max="row.currentStock + row.originalQuantity"
+                            :disabled="row.isDeleted === 1"
                         />
                       </template>
                     </el-table-column>
@@ -515,7 +529,7 @@
                 <!-- 在金额汇总区域后添加分隔线 -->
                 <el-divider />
                 <!-- 增加历史记录查看 -->
-                <div class="history-link">
+                <div class="history-link" v-if="false">
                   <el-link type="primary" @click="showRevisionHistory">
                     <el-icon><Clock /></el-icon>
                     查看修订历史
@@ -1195,6 +1209,16 @@ const handleRevise = async (order) => {
 // 提交修订
 const submitRevision = async () => {
   try {
+    // 检查是否有修改已删除商品
+    const hasModifiedDeleted = reviseForm.value.products.some(p =>
+        p.isDeleted === 1 &&
+        (p.quantity !== p.originalQuantity)
+    )
+
+    if (hasModifiedDeleted) {
+      ElMessage.error('存在已删除商品的修改，请检查')
+      return
+    }
     // 计算新总金额
     const newTotal = reviseForm.value.products.reduce((total, item) => {
       const itemTotal = (item.salePrice - item.itemDiscount) * item.quantity
@@ -1508,5 +1532,22 @@ const exportToPDF = async () => {
 /* 标签排列优化 */
 .el-tag + .el-tag {
   margin-left: 5px;
+}
+
+.product-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.warning-icon {
+  color: #e6a23c;
+  cursor: help;
+}
+
+/* 禁用状态的输入框样式 */
+:deep(.is-disabled .el-input__wrapper) {
+  background-color: #f5f7fa;
+  box-shadow: none;
 }
 </style>

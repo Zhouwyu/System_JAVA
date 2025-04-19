@@ -333,7 +333,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                                     owp.getQuantity(),
                                     owp.getSalePrice(),
                                     product.getStockQuantity(),
-                                    owp.getItemDiscount()
+                                    owp.getItemDiscount(),
+                                    product.getIsDeleted()
                             ) : null;
                 })
                 .filter(Objects::nonNull)
