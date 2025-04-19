@@ -155,8 +155,9 @@
                 list-type="picture"
             >
               <template #trigger>
-                <el-button type="primary">选择图片</el-button>
+                <el-button type="primary">选择图片（可选）</el-button>
               </template>
+              <div class="upload-tip">支持 JPG/PNG 格式，大小不超过10MB</div>
               <div v-if="form.productImage" class="preview-box">
                 <img :src="form.tempImageUrl" class="preview-image"/>
                 <div class="image-info">
@@ -211,13 +212,17 @@
         <el-table-column label="图片" prop="productImage" width="120">
           <template #default="{row}">
             <el-image
-                v-if="row.productImage + '?accessToken=' + data.accessToken"
+                v-if="row.productImage"
                 :src="row.productImage + '?accessToken=' + data.accessToken"
                 :preview-src-list="[row.productImage + '?accessToken=' + data.accessToken]"
                 fit="cover"
                 class="thumb-image"
                 preview-teleported
             />
+            <div v-else class="no-image">
+              <el-icon :size="20"><Picture /></el-icon>
+              <span>无图片</span>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180">
@@ -319,13 +324,13 @@ const handleImageChange = (file) => {
 // 图片上传处理
 const beforeImageUpload = (file) => {
   const isImage = ['image/jpeg', 'image/png'].includes(file.type)
-  const isLt2M = file.size / 1024 / 1024 < 2
+  const isLt10M = file.size / 1024 / 1024 < 10
 
   if (!isImage) {
     ElMessage.error('只能上传JPG/PNG格式图片!')
     return false
   }
-  if (!isLt2M) {
+  if (!isLt10M) {
     ElMessage.error('图片大小不能超过2MB!')
     return false
   }
@@ -450,10 +455,6 @@ const handleCancel = async () => {
 // 提交表单
 const submitForm = async () => {
   try {
-    if (!form.productImage || form.productImage.startsWith('blob:')) {
-      ElMessage.error('请先完成图片上传')
-      return
-    }
     await formRef.value.validate()
 
     const submitData = {
@@ -639,6 +640,22 @@ onMounted(() => {
 :deep(.el-table .low-stock-row:hover) {
   & td {
     background-color: #ffe0e0 !important;
+  }
+}
+
+.no-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #909399;
+  padding: 5px;
+
+  .el-icon {
+    margin-bottom: 3px;
+  }
+
+  span {
+    font-size: 12px;
   }
 }
 </style>
