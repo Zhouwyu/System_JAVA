@@ -271,11 +271,88 @@ body {
 }
 
 .van-toast {
-  position: fixed;
+  position: fixed !important;
   left: 50% !important;
   top: 50% !important;
   transform: translate(-50%, -50%) !important;
   z-index: 9999;
+  margin: 0 !important;
+  min-width: 180px;
+  max-width: 80vw;
+  box-sizing: border-box;
+  backdrop-filter: blur(8px);
+  border-radius: 12px !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.12) !important;
+  padding: 18px 24px !important;
+
+  &__text {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    color: #333 !important;
+    line-height: 1.5;
+    text-align: center !important;
+  }
+
+  &__icon {
+    font-size: 36px !important;
+    margin-bottom: 12px !important;
+  }
+
+  // 成功状态
+  &--success {
+    background: rgba(255,255,255,0.98) !important;
+    border: 1px solid #e6f7e6;
+    .van-toast__icon {
+      color: #34d399 !important;
+    }
+  }
+
+  // 失败状态
+  &--fail {
+    background: rgba(255,255,255,0.98) !important;
+    border: 1px solid #ffe6e6;
+    .van-toast__icon {
+      color: #ef4444 !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    min-width: 200px;
+    max-width: 90%;
+    border-radius: 16px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+
+    @supports (padding: max(0px)) {
+      padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+    }
+  }
 }
 
+// 入场动画修正
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+// 添加入场动画
+.van-popup-enter-active {
+  animation: toastSlideIn 0.3s ease;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
 </style>
