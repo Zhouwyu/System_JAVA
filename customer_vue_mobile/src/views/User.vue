@@ -177,7 +177,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Dialog, Toast } from 'vant'
+import { showConfirmDialog, showToast } from 'vant'
 import request from '@/utils/request'
 
 // 用户数据
@@ -332,7 +332,12 @@ const loadRoles = async () => {
       text: role.roleName,
     }))
   } catch (error) {
-    Toast.fail('加载角色失败')
+    showToast({
+      message: '加载角色失败',
+      icon: 'fail',
+      duration: 1500,
+      position: 'middle',
+    })
   }
 }
 
@@ -346,16 +351,25 @@ const submitForm = async () => {
     const isCreate = dialogType.value === 'create'
     const apiUrl = isCreate ? '/user/create' : '/user/update'
     const params = {
-      ...currentUser,
+      userId: currentUser.userId,
+      username: currentUser.userName,
+      fullName: currentUser.fullName,
+      email: currentUser.email,
       mobile: currentUser.phone,
-      username: currentUser.userName
+      roleId: currentUser.roleId, // 根据后端字段要求可能需要调整
+      ...(isCreate && { password: currentUser.password }) // 仅创建时传密码
     }
 
     // 发送请求
     const res = await request.post(apiUrl, params)
 
     if (res.code === '200') {
-      Toast.success(isCreate ? '创建成功' : '修改成功')
+      showToast({
+        message: isCreate ? '创建成功' : '修改成功',
+        icon: 'success',
+        duration: 1500,
+        position: 'middle',
+      })
       dialogVisible.value = false
       resetList()
     }
@@ -366,12 +380,17 @@ const submitForm = async () => {
 
 // 删除用户
 const handleDelete = (userId) => {
-  Dialog.confirm({
+  showConfirmDialog({
     title: '确认删除',
     message: '确定要删除该用户吗？'
-  }).then(async () => {
+  }) .then(async () => {
     await request.post('/user/delete/batch', { ids: [userId] })
-    Toast.success('删除成功')
+    showToast({
+      message: '删除成功',
+      icon: 'success',
+      duration: 1500,
+      position: 'middle',
+    })
     resetList()
   })
 }
@@ -386,11 +405,8 @@ const resetList = () => {
 
 // 角色选择
 const onRoleConfirm = ({ selectedOptions }) => {
-  console.log("看看选的是1："+selectedOptions[0].value)
-  console.log("看看选的是2："+selectedOptions[0].text)
   currentUser.roleId = selectedOptions[0].value
   currentUser.roleName = selectedOptions[0].text
-  console.log("看看选的是3："+currentUser.roleName)
   showRolePicker.value = false
 }
 
