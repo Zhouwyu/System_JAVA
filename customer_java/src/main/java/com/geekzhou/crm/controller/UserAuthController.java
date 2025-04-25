@@ -19,6 +19,7 @@ public class UserAuthController {
     @PostMapping("/login")
     public Result login(@RequestBody User user) {
         User dbUser = userService.getUserInfoByUsername(user);
+        dbUser.setPassword(null);
         return Result.success(dbUser);
     }
 

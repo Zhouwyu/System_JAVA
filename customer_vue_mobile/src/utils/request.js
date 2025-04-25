@@ -1,5 +1,5 @@
 import axios from "axios";
-import {ElMessage} from "element-plus";
+import { showToast } from 'vant';
 
 const request = axios.create({
     // baseURL: 'http://8.138.216.212:8090',
@@ -26,11 +26,11 @@ request.interceptors.response.use(response => {
     return res
 }, error => {
     if (error.response.status === 404) {
-        ElMessage.error('未找到请求接口')
+        showToast('未找到请求接口')
     } else if (error.response.status === 500) {
-        ElMessage.error('系统异常，请查看后端控制台报错')
+        showToast('系统异常，请查看后端控制台报错')
     } else {
-        ElMessage.error(error.message)
+        showToast(error.message)
     }
     return Promise.reject(error)
 })

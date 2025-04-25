@@ -24,9 +24,9 @@
     <!-- 客户列表 -->
     <van-list
         v-model:loading="loading"
-        :finished="finished"
-        finished-text="没有更多了"
-        @load="load"
+        :finished="true"
+        :immediate-check="false"
+        :offset="0"
     >
       <van-checkbox-group v-model="selectedIds" ref="checkboxGroup">
         <van-cell v-for="item in data.tableData" :key="item.customerId">
@@ -51,6 +51,25 @@
         </van-cell>
       </van-checkbox-group>
     </van-list>
+
+    <!-- 新增分页按钮 -->
+    <div class="pagination">
+      <van-button
+          :disabled="data.queryParams.pageNum <= 1"
+          @click="prevPage"
+          size="small"
+      >
+        上一页
+      </van-button>
+      <span class="page-info">第 {{ data.queryParams.pageNum }} 页 / 共 {{ totalPages }} 页</span>
+      <van-button
+          :disabled="data.queryParams.pageNum >= totalPages"
+          @click="nextPage"
+          size="small"
+      >
+        下一页
+      </van-button>
+    </div>
 
     <!-- 批量操作栏 -->
     <div v-if="selectedIds.length" class="batch-actions">
@@ -218,7 +237,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { showConfirmDialog, showToast } from 'vant'
 import request from '@/utils/request'
 
@@ -262,17 +281,34 @@ const originalPhone = ref('')
 // 加载数据
 const load = async () => {
   try {
+    loading.value = true;
     const res = await request.get('/customer/page', {
       params: data.queryParams
     })
     data.tableData = res.data.records
     data.total = res.data.total
-    loading.value = false
-    finished.value = data.queryParams.pageNum * data.queryParams.pageSize >= data.total
+    // 计算总页数
+    const totalPages = Math.ceil(data.total / data.queryParams.pageSize);
+    finished.value = data.queryParams.pageNum >= totalPages;
   } catch (error) {
     showToast('数据加载失败')
+  } finally {
+    loading.value = false;
   }
 }
+
+const nextPage = () => {
+  const totalPages = Math.ceil(data.total / data.queryParams.pageSize);
+  if (data.queryParams.pageNum < totalPages) {
+    data.queryParams.pageNum++;
+    load();
+  }
+};
+
+// 计算属性
+const totalPages = computed(() => {
+  return Math.ceil(data.total / data.queryParams.pageSize);
+});
 
 // 加载行业数据
 const loadIndustries = async () => {
@@ -526,5 +562,29 @@ onMounted(() => {
 
 .van-cell {
   align-items: flex-start;
+}
+
+/* 分页样式 */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 16px;
+  background: #f7f8fa;
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+}
+
+.page-info {
+  font-size: 14px;
+  color: #969799;
+}
+
+/* 禁用按钮样式 */
+.van-button--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

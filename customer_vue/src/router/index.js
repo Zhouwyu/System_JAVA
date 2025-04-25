@@ -4,8 +4,6 @@ const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
         {path: '/', redirect: '/login'},
-        {path: '/404', name: 'notFound', meta: {title: "找不到页面"}, component: () => import('../views/404.vue'),},
-        {path: '/:pathMatch(.*)', redirect: '/404'},
         {path: '/login', name: 'Login', meta: {title: "登录页面"}, component: () => import('../views/Login.vue'),},
 
         // 父级路由嵌套子级路由
@@ -49,6 +47,8 @@ const router = createRouter({
                 },
             ]
         },
+        {path: '/404', name: 'notFound', meta: {title: "找不到页面"}, component: () => import('../views/404.vue'),},
+        {path: '/:pathMatch(.*)', redirect: '/404'},
     ],
 })
 

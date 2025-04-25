@@ -99,7 +99,7 @@
       >
         上一页
       </van-button>
-      <span class="page-info">第 {{ data.queryParams.pageNum }} 页</span>
+      <span class="page-info">第 {{ data.queryParams.pageNum }} 页 / 共 {{ totalPages }} 页</span>
       <van-button
           :disabled="finished"
           @click="nextPage"
@@ -367,6 +367,11 @@ const load = async () => {
     loading.value = false;
   }
 }
+
+// 计算属性
+const totalPages = computed(() => {
+  return Math.ceil(data.total / data.queryParams.pageSize);
+});
 
 // 新增分页方法
 const prevPage = () => {
