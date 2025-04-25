@@ -128,6 +128,7 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateCustomer(Customer customer) {
+        StaticLog.info("看看Customer:{}", customer);
         return customerMapper.updateById(customer);
     }
 

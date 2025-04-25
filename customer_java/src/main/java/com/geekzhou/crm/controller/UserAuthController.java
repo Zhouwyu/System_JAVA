@@ -4,6 +4,7 @@ import com.geekzhou.crm.common.Result;
 import com.geekzhou.crm.entity.User;
 import com.geekzhou.crm.exception.CustomException;
 import com.geekzhou.crm.service.impl.UserServiceImpl;
+import com.geekzhou.crm.vo.UserLoginInfoVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,9 +19,8 @@ public class UserAuthController {
 
     @PostMapping("/login")
     public Result login(@RequestBody User user) {
-        User dbUser = userService.getUserInfoByUsername(user);
-        dbUser.setPassword(null);
-        return Result.success(dbUser);
+        UserLoginInfoVo userLoginInfoVo = userService.getUserInfoByUsername(user);
+        return Result.success(userLoginInfoVo);
     }
 
     // TODO: 忘记密码系列功能

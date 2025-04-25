@@ -6,12 +6,13 @@ import com.geekzhou.crm.dto.CustomerQueryDto;
 import com.geekzhou.crm.dto.UserQueryDto;
 import com.geekzhou.crm.entity.Customer;
 import com.geekzhou.crm.entity.User;
+import com.geekzhou.crm.vo.UserLoginInfoVo;
 import com.geekzhou.crm.vo.UserShowInfoVo;
 
 import java.util.List;
 
 public interface UserService extends IService<User> {
-    User getUserInfoByUsername(User userFromQd);
+    UserLoginInfoVo getUserInfoByUsername(User userFromQd);
 
     User getUserInfoByUserId(Integer userId);
 

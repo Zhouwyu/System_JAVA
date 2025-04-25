@@ -333,8 +333,8 @@ const rules = {
   sex: [{required: true, message: '请选择性别', trigger: 'change'}],
   businessIndustry: [{required: true, message: '请选择行业', trigger: 'change'}],
   wechatNum: [
-    {required: true, message: '微信号不能为空', trigger: 'blur'},
-    {pattern: /^[a-zA-Z][\w-]{5,19}$/, message: '微信号格式不正确'}
+    {required: false, message: '微信号不能为空', trigger: 'blur'},
+    // {pattern: /^[a-zA-Z][\w-]{5,19}$/, message: '微信号格式不正确'}
   ],
   phoneNum: [
     {required: true, message: '手机号不能为空', trigger: 'blur'},

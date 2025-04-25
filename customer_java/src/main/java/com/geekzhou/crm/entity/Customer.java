@@ -21,8 +21,7 @@ public class Customer {
     @TableField(value = "customer_name", condition = SqlCondition.LIKE)
     private String customerName;
 
-    @NotBlank(message = "微信号不能为空")
-    @TableField(value = "wechat_num", updateStrategy = FieldStrategy.NOT_EMPTY)
+    @TableField(value = "wechat_num")
     private String wechatNum;
 
     @NotBlank(message = "手机号不能为空")

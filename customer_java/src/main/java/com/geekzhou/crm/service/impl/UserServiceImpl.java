@@ -18,6 +18,7 @@ import com.geekzhou.crm.service.UserService;
 import com.geekzhou.crm.utils.PasswordUtils;
 import com.geekzhou.crm.utils.TokenUtils;
 import com.geekzhou.crm.vo.OrderShowInfoVo;
+import com.geekzhou.crm.vo.UserLoginInfoVo;
 import com.geekzhou.crm.vo.UserShowInfoVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private RoleMapper roleMapper;
 
     @Override
-    public User getUserInfoByUsername(User userFromQd) {
+    public UserLoginInfoVo getUserInfoByUsername(User userFromQd) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("username", userFromQd.getUsername());
         User dbUserInfo = userMapper.selectOne(queryWrapper);
@@ -59,7 +60,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         String token = TokenUtils.createToken(dbUserInfo.getUserId() + "-" + roleMapper.selectById(dbUserInfo.getRoleId()).getRoleCode(),
                 dbUserInfo.getPassword());
         dbUserInfo.setAccessToken(token);
-        return dbUserInfo;
+        UserLoginInfoVo userLoginInfoVo = new UserLoginInfoVo();
+        userLoginInfoVo.setUserName(dbUserInfo.getUsername());
+        userLoginInfoVo.setRoleId(dbUserInfo.getRoleId());
+        userLoginInfoVo.setUserId(dbUserInfo.getUserId());
+        userLoginInfoVo.setAccessToken(token);
+        userLoginInfoVo.setStatus(dbUserInfo.getStatus().getCode());
+        return userLoginInfoVo;
     }
 
     @Override
