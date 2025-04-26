@@ -43,21 +43,6 @@
             <span style="font-size: 14px; padding-left: 10px">高级筛选</span>
           </template>
           <el-row :gutter="10" align="middle">
-            <!--            <el-col :span="6">-->
-            <!--              <el-select-->
-            <!--                  v-model="data.queryParams.productId"-->
-            <!--                  placeholder="选择商品"-->
-            <!--                  filterable-->
-            <!--                  clearable-->
-            <!--              >-->
-            <!--                <el-option-->
-            <!--                    v-for="item in data.productOptions"-->
-            <!--                    :key="item.value"-->
-            <!--                    :label="item.label"-->
-            <!--                    :value="item.value"-->
-            <!--                />-->
-            <!--              </el-select>-->
-            <!--            </el-col>-->
             <el-col :span="6">
               <el-date-picker
                   v-model="data.queryParams.dateRange"
@@ -80,7 +65,7 @@
     </div>
 
     <!-- 新增抽屉 -->
-    <el-drawer v-model="drawerVisible" direction="rtl" size="50%" :before-close="handleBeforeClose"
+    <el-drawer v-model="drawerVisible" direction="rtl" size="100%" :before-close="handleBeforeClose"
                @close="resetForm">
       <template #header>
         <h4>新建订单信息</h4>
@@ -107,7 +92,7 @@
           <el-form-item label="客户信息" prop="customerInfo">
             <el-descriptions :column="3" border>
               <el-descriptions-item label="联系电话">
-                {{ form.customerPhone || '请先选择客户' }}
+                {{ form.customerPhone || '-' }}
               </el-descriptions-item>
               <el-descriptions-item label="联系地址">
                 {{ form.customerAddress || '-' }}
@@ -152,14 +137,22 @@
                       :step="10"
                       @change="calculateTotal"
                   />
-                  <span>单价: ¥{{ item.price }}</span>
-                  <span>成交价: ¥{{ item.salePrice }}</span>
+<!--                  <span>单价: ¥{{ item.price }}</span>-->
+                  <span>成交单价: ¥{{ item.salePrice }}</span>
                 </div>
                 <el-input-number
                     v-model="item.quantity"
                     :min="1"
                     :max="item.stock"
                     @change="calculateTotal"
+                />
+                <span class="unit">{{ item.unit || '件' }}</span>
+                <el-input
+                    v-model="item.productRemark"
+                    placeholder="商品备注"
+                    maxlength="50"
+                    show-word-limit
+                    style="width: 200px; margin-left: 10px;"
                 />
                 <el-button
                     type="danger"
@@ -241,7 +234,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="订单明细" prop="orderDetail" width="100">
+        <el-table-column label="订单明细" prop="orderDetail" width="120">
           <template #default="scope">
             <el-button
                 type="primary"
@@ -307,19 +300,29 @@
                   <!-- 替换原有商品信息展示部分 -->
                   <el-descriptions-item label="商品清单" :span="2">
                     <el-table :data="currentOrder.products" border size="small">
-                      <el-table-column label="商品名称" prop="productName" width="180"/>
-                      <el-table-column label="成交价" width="120">
+                      <el-table-column label="序号" width="35" align="center">
+                        <template #default="{ $index }">
+                          {{ $index + 1 }}
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="商品名称" prop="productName" width="180" align="center"/>
+                      <el-table-column label="成交单价" width="80" align="center">
                         <template #default="{row}">
                           ¥{{ row.salePrice.toFixed(2) }}
                         </template>
                       </el-table-column>
-                      <el-table-column label="数量" prop="quantity" width="100"/>
-                      <el-table-column label="小计" width="120">
+                      <el-table-column label="数量" prop="quantity" width="50" align="center"/>
+                      <el-table-column label="单位" width="35" align="center">
+                        <template #default="{row}">
+                          {{ row.unit || '件' }}
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="小计" width="90" align="center">
                         <template #default="{row}">
                           <span style="color:#67C23A">¥{{ row.subtotal }}</span>
                         </template>
                       </el-table-column>
-                      <el-table-column label="折扣信息" width="120">
+                      <el-table-column label="折扣信息" width="100" align="center">
                         <template #default="{row}">
                           <el-tag
                               v-if="row.itemDiscount > 0"
@@ -330,6 +333,11 @@
                             -¥{{ (row.itemDiscount*row.quantity).toFixed(2) }}
                           </el-tag>
                           <span v-else>-</span>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="商品备注" min-width="150" align="center">
+                        <template #default="{row}">
+                          {{ row.productRemark || '-' }}
                         </template>
                       </el-table-column>
                     </el-table>
@@ -458,7 +466,8 @@
 
                   <!-- 商品级折扣 -->
                   <el-table :data="reviseForm.products">
-                    <el-table-column label="商品名称" prop="productName">
+                    <el-table-column label="商品名称" prop="productName"  width="180"
+                                     header-align="center">
                       <template #default="{row}">
                         <div class="product-name-wrapper">
                           <span>{{ row.productName }}</span>
@@ -472,8 +481,12 @@
                         </div>
                       </template>
                     </el-table-column>
-                    <el-table-column label="成交价" prop="salePrice"/>
-                    <el-table-column label="数量">
+                    <el-table-column label="成交单价" prop="salePrice"  width="100"
+                                     align="center"
+                                     header-align="center"/>
+                    <el-table-column label="数量" width="160"
+                                     align="center"
+                                     header-align="center">
                       <template #default="{row}">
                         <el-input-number
                             v-model="row.quantity"
@@ -483,7 +496,14 @@
                         />
                       </template>
                     </el-table-column>
-                    <el-table-column label="单品折扣">
+                    <el-table-column label="单位" width="80" align="center" header-align="center">
+                      <template #default="{row}">
+                        {{ row.unit || '件' }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="单品折扣" width="160"
+                                     align="right"
+                                     header-align="center">
                       <template #default="{row}">
                         <el-input-number
                             v-model="row.itemDiscount"
@@ -494,9 +514,21 @@
                       </template>
                     </el-table-column>
                     <!-- 新增小计列 -->
-                    <el-table-column label="小计" width="120">
+                    <el-table-column label="小计" width="120"  align="center"
+                                     header-align="center">
                       <template #default="{row}">
                         ¥{{ ((row.salePrice - row.itemDiscount) * row.quantity).toFixed(2) }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column label="商品备注" width="150" align="center">
+                      <template #default="{row}">
+                        <el-input
+                            v-model="row.productRemark"
+                            placeholder="输入备注"
+                            maxlength="50"
+                            show-word-limit
+                            size="small"
+                        />
                       </template>
                     </el-table-column>
                   </el-table>
@@ -848,6 +880,7 @@ const loadBaseData = async () => {
       label: p.productName,
       price: p.price,
       stock: p.stockQuantity,
+      unit: p.unit,
       // 补充完整商品信息
       ...p
     }))
@@ -878,7 +911,8 @@ const handleProductSelect = (selectedProducts) => {
     return productMap.get(sp.productId) || {
       ...sp,
       salePrice: sp.price, // 默认使用原价
-      quantity: 1
+      quantity: 1,
+      unit: sp.unit
     }
   })
 
@@ -945,6 +979,7 @@ const submitForm = async () => {
         salePrice: item.salePrice,
         stock: item.stock,
         orderNo: "",
+        productRemark: item.productRemark
       })),
       totalPrice: form.totalPrice,
       remark: form.remark,
@@ -1155,7 +1190,9 @@ const currentOrder = ref({
       price: 0,
       quantity: 1,
       salePrice: 0, // 成交价
-      itemDiscount: 0 // 单品折扣
+      itemDiscount: 0, // 单品折扣
+      unit: null,
+      productRemark: ''
     }
   ],
 

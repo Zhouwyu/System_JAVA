@@ -12,4 +12,5 @@ public class ProductsReviseDto implements Serializable {
     private Integer quantity; // 新商品数量
     private BigDecimal salePrice;
     private BigDecimal itemDiscount; // 单品扣减金额
+    private String productRemark;
 }

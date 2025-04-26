@@ -14,4 +14,5 @@ public class OrderWithProductsDto implements Serializable {
     private BigDecimal salePrice; // 商品成交价
     private Integer quantity;
     private Integer stock;
+    private String productRemark; // 商品备注
 }

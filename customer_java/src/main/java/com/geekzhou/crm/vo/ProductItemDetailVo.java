@@ -17,4 +17,6 @@ public class ProductItemDetailVo implements Serializable {
     private Integer stockQuantity; // 库存
     private BigDecimal itemDiscount; // 单个折扣
     private Integer isDeleted; // 是否删除标记
+    private String unit; // 单位
+    private String productRemark; // 商品备注
 }

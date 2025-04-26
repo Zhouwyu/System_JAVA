@@ -31,19 +31,12 @@
           </template>
           <el-row :gutter="10" align="middle">
             <el-col :span="6">
-              <el-select
+              <el-input
                   v-model="data.queryParams.industry"
                   placeholder="所属行业"
                   clearable
                   style="width: 100%"
-              >
-                <el-option
-                    v-for="item in data.industries"
-                    :key="item.value"
-                    :label="item.label"
-                    :value="item.label"
-                />
-              </el-select>
+              />
             </el-col>
             <el-col :span="6">
               <el-select
@@ -106,14 +99,11 @@
             </el-col>
             <el-col :span="12">
               <el-form-item label="经营行业" prop="businessIndustry">
-                <el-select v-model="form.businessIndustry" placeholder="请选择行业">
-                  <el-option
-                      v-for="item in data.industries"
-                      :key="item.value"
-                      :label="item.label"
-                      :value="item.label"
-                  />
-                </el-select>
+                <el-input
+                    v-model="form.businessIndustry"
+                    placeholder="请输入行业名称"
+                    clearable
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -126,7 +116,6 @@
                     v-model="form.wechatNum"
                     placeholder="请输入微信号"
                     clearable
-                    @blur="checkWechat"
                 />
               </el-form-item>
             </el-col>
@@ -136,7 +125,6 @@
                     v-model="form.phoneNum"
                     placeholder="请输入手机号"
                     clearable
-                    @blur="checkPhone"
                 />
               </el-form-item>
             </el-col>
@@ -247,7 +235,6 @@ const data = reactive({
   activeCollapse: ['basic'], // 默认展开的面板
   total: 0,
   tableData: [],
-  industries: []
 })
 
 // 加载客户数据
@@ -273,49 +260,6 @@ const reset = () => {
   load()
 }
 
-// 加载行业列表
-const loadIndustries = async () => {
-  // try {
-  //   const res = await request.get('/industry/list')
-  //   data.industries = res.data.map(item => ({
-  //     label: item.name,
-  //     value: item.id
-  //   }))
-  // } catch (error) {
-  //   ElMessage.error('加载行业列表失败')
-  // }
-
-  try {
-    const res = [
-      {name: '农、林、牧、渔业', id: 1},
-      {name: '采矿业', id: 2},
-      {name: '制造业', id: 3},
-      {name: '电力、热力、燃气及水生产和供应业', id: 4},
-      {name: '建筑业', id: 5},
-      {name: '批发和零售业', id: 6},
-      {name: '交通运输、仓储和邮政业', id: 7},
-      {name: '住宿和餐饮业', id: 8},
-      {name: '信息传输、软件和信息技术服务业', id: 9},
-      {name: '金融业', id: 10},
-      {name: '房地产业', id: 11},
-      {name: '租赁和商务服务业', id: 12},
-      {name: '科学研究和技术服务业', id: 13},
-      {name: '水利、环境和公共设施管理业', id: 14},
-      {name: '居民服务、修理和其他服务业', id: 15},
-      {name: '教育', id: 16},
-      {name: '卫生和社会工作', id: 17},
-      {name: '文化、体育和娱乐业', id: 18},
-      {name: '公共管理、社会保障和社会组织', id: 19},
-      {name: '国际组织', id: 20},
-    ]
-    data.industries = res.map(item => ({
-      label: item.name,
-      value: item.id
-    }))
-  } catch (error) {
-    ElMessage.error('加载行业列表失败')
-  }
-}
 
 // 表单相关
 const form = reactive({
@@ -331,13 +275,15 @@ const form = reactive({
 const rules = {
   customerName: [{required: true, message: '客户名称不能为空', trigger: 'blur'}],
   sex: [{required: true, message: '请选择性别', trigger: 'change'}],
-  businessIndustry: [{required: true, message: '请选择行业', trigger: 'change'}],
+  businessIndustry: [
+    { required: false, message: '请输入行业名称', trigger: 'blur' }
+  ],
   wechatNum: [
     {required: false, message: '微信号不能为空', trigger: 'blur'},
     // {pattern: /^[a-zA-Z][\w-]{5,19}$/, message: '微信号格式不正确'}
   ],
   phoneNum: [
-    {required: true, message: '手机号不能为空', trigger: 'blur'},
+    {required: false, message: '手机号不能为空', trigger: 'blur'},
     {pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确'}
   ]
 }
@@ -538,7 +484,6 @@ const isFormDirty = () => {
 // 初始化
 onMounted(() => {
   load()
-  loadIndustries()
 })
 </script>
 

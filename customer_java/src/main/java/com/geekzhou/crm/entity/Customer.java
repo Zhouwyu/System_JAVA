@@ -24,7 +24,6 @@ public class Customer {
     @TableField(value = "wechat_num")
     private String wechatNum;
 
-    @NotBlank(message = "手机号不能为空")
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     @TableField("phone_num")
     private String phoneNum;
@@ -38,7 +37,6 @@ public class Customer {
     @TableField("sex")
     private String sex;
 
-    @NotBlank(message = "经营行业不能为空")
     @Size(max = 255, message = "经营行业最长255个字符")
     @TableField("business_industry")
     private String businessIndustry;

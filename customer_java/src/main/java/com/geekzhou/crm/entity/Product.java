@@ -24,7 +24,13 @@ public class Product {
     @DecimalMin(value = "0.00", message = "单价不能为负数")
     @Digits(integer = 10, fraction = 2, message = "单价格式不正确")
     @TableField("price")
-    private BigDecimal price;
+    private BigDecimal price; // 进货价
+
+    @NotNull(message = "零售价不能为空")
+    @DecimalMin(value = "0.00", message = "零售价不能为负数")
+    @Digits(integer = 10, fraction = 2, message = "零售价格式不正确")
+    @TableField("retail_price")
+    private BigDecimal retailPrice;
 
     @NotNull(message = "库存数量不能为空")
     @Min(value = 0, message = "库存数量不能小于0")

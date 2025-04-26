@@ -139,7 +139,7 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
     public List<CustomerInfoVo> getAllCustomer() {
         List<Customer> customers = customerMapper.selectList(
                 Wrappers.<Customer>lambdaQuery()
-                        .select(Customer::getCustomerId, Customer::getCustomerName) // 只返回必要字段
+                        .select(Customer::getCustomerId, Customer::getCustomerName, Customer::getPhoneNum) // 只返回必要字段
                         .eq(Customer::getIsDeleted, 0)
                         .orderByDesc(Customer::getCreateTime)       // 按创建时间倒序
         );

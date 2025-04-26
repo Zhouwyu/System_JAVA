@@ -29,11 +29,22 @@
           </template>
           <el-row :gutter="10" align="middle">
             <el-col :span="5">
-              <el-input
+              <el-select
                   v-model="data.queryParams.supplier"
                   placeholder="供应商渠道"
+                  filterable
                   clearable
-              />
+                  style="width: 100%"
+              >
+                <el-option
+                    v-for="item in data.supplierOptions"
+                    :key="item.value"
+                    :label="item.label"
+                    :value="item.label"
+                >
+                  <span class="supplier-option">{{ item.label }}</span>
+                </el-option>
+              </el-select>
             </el-col>
             <el-col :span="5">
               <el-input
@@ -92,9 +103,19 @@
 
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="单价" prop="price">
+              <el-form-item label="进货价" prop="price">
                 <el-input-number
                     v-model="form.price"
+                    :min="0"
+                    :precision="2"
+                    style="width: 100%"
+                />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="零售价" prop="retailPrice">
+                <el-input-number
+                    v-model="form.retailPrice"
                     :min="0"
                     :precision="2"
                     style="width: 100%"
@@ -133,7 +154,22 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="供应商渠道" prop="supplierChannel">
-                <el-input v-model="form.supplierChannel"/>
+                <el-select
+                    v-model="form.supplierChannel"
+                    placeholder="请选择供应商"
+                    filterable
+                    clearable
+                    @change="handleSupplierChange"
+                >
+                  <el-option
+                      v-for="item in data.supplierOptions"
+                      :key="item.value"
+                      :label="item.label"
+                      :value="item.label"
+                  >
+                    <span class="supplier-option">{{ item.label }}</span>
+                  </el-option>
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -188,8 +224,11 @@
       >
         <el-table-column type="selection" width="55"/>
         <el-table-column label="商品名称" prop="productName" width="180"/>
-        <el-table-column label="单价" prop="price" width="120">
+        <el-table-column label="进货价" prop="price" width="120">
           <template #default="{row}">¥{{ row.price.toFixed(2) }}</template>
+        </el-table-column>
+        <el-table-column label="零售价" prop="retailPrice" width="120">
+          <template #default="{row}">¥{{ row.retailPrice.toFixed(2) }}</template>
         </el-table-column>
         <el-table-column label="单位" prop="unit" width="120">
           <template #default="{row}">{{ row.unit || '-' }}</template>
@@ -220,7 +259,9 @@
                 preview-teleported
             />
             <div v-else class="no-image">
-              <el-icon :size="20"><Picture /></el-icon>
+              <el-icon :size="20">
+                <Picture/>
+              </el-icon>
               <span>无图片</span>
             </div>
           </template>
@@ -270,12 +311,14 @@ const data = reactive({
   tableData: [],
   total: 0,
   activeCollapse: ['basic'],
+  supplierOptions: [] // 新增供应商选项
 })
 
 // 表单相关
 const form = reactive({
   productName: '',
   price: 0,
+  retailPrice: 0,
   stockQuantity: 0,
   purchaseDate: '',
   supplierChannel: '',
@@ -289,28 +332,58 @@ const form = reactive({
 
 const rules = {
   unit: [
-    { max: 10, message: '单位长度不能超过10个字符', trigger: 'blur' }
+    {max: 10, message: '单位长度不能超过10个字符', trigger: 'blur'}
   ],
   productName: [{required: true, message: '请输入商品名称', trigger: 'blur'}],
-  price: [{required: true, message: '请输入商品价格', trigger: 'blur'}],
+  price: [{required: true, message: '请输入商品进货价', trigger: 'blur'}],
+  retailPrice: [{required: true, message: '请输入商品零售价', trigger: 'blur'}],
   stockQuantity: [{required: true, message: '请输入库存数量', trigger: 'blur'}],
   purchaseDate: [{required: true, message: '请选择进货日期', trigger: 'change'}],
-  supplierChannel: [{required: true, message: '请输入供应商渠道', trigger: 'blur'}],
-  supplierContact: [
-    {required: true, message: '请输入联系方式', trigger: 'blur'},
+  supplierChannel: [
     {
-      validator: (_, value, callback) => {
-        const phoneRegex = /^(?:\d{3,4}-\d{7,8}|\d{3}-\d{3,4}-\d{4}|1[3-9]\d{9})$/
-        const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/
-        if (!phoneRegex.test(value) && !emailRegex.test(value)) {
-          callback(new Error('请输入有效的手机号或邮箱'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
+      required: true,
+      message: '请选择供应商',
+      trigger: ['blur', 'change']
+    },
+  ],
+  supplierContact: [
+    {required: false, message: '请输入联系方式', trigger: 'blur'},
+    // {
+    //   validator: (_, value, callback) => {
+    //     const phoneRegex = /^(?:\d{3,4}-\d{7,8}|\d{3}-\d{3,4}-\d{4}|1[3-9]\d{9})$/
+    //     const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/
+    //     if (!phoneRegex.test(value) && !emailRegex.test(value)) {
+    //       callback(new Error('请输入有效的手机号或邮箱'))
+    //     } else {
+    //       callback()
+    //     }
+    //   },
+    //   trigger: 'blur'
+    // }
   ]
+}
+
+// 加载供应商列表
+const loadSuppliers = async () => {
+  try {
+    const res = await request.get('/customer/list')
+    data.supplierOptions = res.data.map(item => ({
+      value: item.customerId,
+      label: item.customerName,
+      contact: item.phoneNum // 保留联系方式用于自动填充
+    }))
+  } catch (error) {
+    ElMessage.error('供应商列表加载失败')
+  }
+}
+
+const handleSupplierChange = (selectedValue) => {
+  const selectedSupplier = data.supplierOptions.find(
+      item => item.label === selectedValue
+  )
+  if (selectedSupplier) {
+    form.supplierContact = selectedSupplier.contact // 自动填充联系方式
+  }
 }
 
 // 图片处理
@@ -573,6 +646,7 @@ const isFormDirty = () => {
 // 初始化
 onMounted(() => {
   load()
+  loadSuppliers()
 })
 </script>
 
@@ -637,6 +711,7 @@ onMounted(() => {
     }
   }
 }
+
 :deep(.el-table .low-stock-row:hover) {
   & td {
     background-color: #ffe0e0 !important;

@@ -112,7 +112,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     public List<ProductInfoVo> getAllProduct() {
         List<Product> products = productMapper.selectList(
                 Wrappers.<Product>lambdaQuery()
-                        .select(Product::getProductId, Product::getProductName, Product::getPrice, Product::getStockQuantity) // 只返回必要字段
+                        .select(Product::getProductId, Product::getProductName, Product::getPrice, Product::getStockQuantity, Product::getUnit) // 只返回必要字段
                         .eq(Product::getIsDeleted, 0) // 未删除
                         .gt(Product::getStockQuantity, 0) // 库存大于0
                         .orderByDesc(Product::getCreateTime)       // 按创建时间倒序

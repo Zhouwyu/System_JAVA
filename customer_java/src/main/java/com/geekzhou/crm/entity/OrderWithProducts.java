@@ -32,4 +32,7 @@ public class OrderWithProducts {
     @TableField("item_discount")
     private BigDecimal itemDiscount; // 单品折扣
 
+    @TableField("product_remark")
+    private String productRemark; // 商品备注
+
 }

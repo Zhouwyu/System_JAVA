@@ -159,6 +159,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         List<OrderWithProductsDto> productsDtos = orderDto.getProductsDtos();
         // 插入订单商品关联表
         List<OrderWithProducts> orderProducts = convertToOrderProducts(orderNum, productsDtos);
+        StaticLog.info("看看商品关联表{}", orderProducts);
         if (!orderProducts.isEmpty()) {
             orderWithProductsMapper.insertBatch(orderProducts);
         }
@@ -189,6 +190,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             op.setQuantity(dto.getQuantity());
             op.setUnitPrice(dto.getPrice());
             op.setSalePrice(dto.getSalePrice());
+            op.setProductRemark(dto.getProductRemark());
             return op;
         }).collect(Collectors.toList());
     }
@@ -331,7 +333,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
                                     owp.getSalePrice(),
                                     product.getStockQuantity(),
                                     owp.getItemDiscount(),
-                                    product.getIsDeleted()
+                                    product.getIsDeleted(),
+                                    product.getUnit(),
+                                    owp.getProductRemark()
                             ) : null;
                 })
                 .filter(Objects::nonNull)
@@ -432,6 +436,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             orderProduct.setSalePrice(reviseItem.getSalePrice());
             // 单品折扣更新
             orderProduct.setItemDiscount(reviseItem.getItemDiscount());
+            // 商品备注更新
+            orderProduct.setProductRemark(reviseItem.getProductRemark());
             orderWithProductsMapper.updateById(orderProduct);
 
             // 更新商品库存

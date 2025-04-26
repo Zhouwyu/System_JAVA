@@ -1,5 +1,6 @@
 com\geekzhou\crm\entity\OrderWithProducts.class
 com\geekzhou\crm\entity\OrderRevision.class
+com\geekzhou\crm\vo\UserLoginInfoVo.class
 com\geekzhou\crm\service\OrderRevisionService.class
 com\geekzhou\crm\service\impl\ProductServiceImpl.class
 com\geekzhou\crm\entity\RolePermission.class

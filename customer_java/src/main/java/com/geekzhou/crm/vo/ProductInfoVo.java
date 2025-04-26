@@ -11,4 +11,5 @@ public class ProductInfoVo implements Serializable {
     private String productName;
     private BigDecimal price;
     private Integer stockQuantity;
+    private String unit;
 }

@@ -13,6 +13,7 @@ public interface ProductToVoMapper {
     @Mapping(target = "productName", source = "productName")
     @Mapping(target = "price", source = "price")
     @Mapping(target = "stockQuantity", source = "stockQuantity")
+    @Mapping(target = "unit", source = "unit")
     ProductInfoVo toVo(Product product);
     // 集合转换（MapStruct自动生成实现）
     List<ProductInfoVo> toVoList(List<Product> products);
