@@ -64,6 +64,10 @@
                   <span class="value">¥{{ item.price.toFixed(2) }}</span>
                 </div>
                 <div class="info-row">
+                  <span class="label">零售价：</span>
+                  <span class="value">¥{{ item.retailPrice?.toFixed(2) || '-' }}</span>
+                </div>
+                <div class="info-row">
                   <span class="label">库存：</span>
                   <span class="value">{{ item.stockQuantity }}{{ item.unit || '件' }}</span>
                 </div>
@@ -128,9 +132,18 @@
 
           <van-field
               v-model="data.queryParams.supplier"
+              is-link
+              readonly
               label="供应商渠道"
-              placeholder="请输入供应商渠道"
+              placeholder="请选择供应商"
+              @click="showFilterSupplierPicker = true"
           />
+          <van-popup v-model:show="showFilterSupplierPicker">
+            <van-picker
+                :columns="customerOptions"
+                @confirm="onFilterSupplierConfirm"
+            />
+          </van-popup>
 
           <van-field
               v-model="data.queryParams.contact"
@@ -211,6 +224,17 @@
           </van-field>
 
           <van-field
+              v-model="form.retailPrice"
+              label="零售价"
+              type="number"
+              :rules="[{ required: true, message: '请输入零售价' }]"
+          >
+            <template #extra>
+              <span class="currency">¥</span>
+            </template>
+          </van-field>
+
+          <van-field
               v-model="form.stockQuantity"
               label="库存数量"
               type="number"
@@ -235,17 +259,25 @@
 
           <van-field
               v-model="form.supplierChannel"
+              is-link
+              readonly
               label="供应商渠道"
-              :rules="[{ required: true, message: '请输入渠道' }]"
+              placeholder="请选择供应商"
+              @click="showSupplierPicker = true"
           />
+          <van-popup v-model:show="showSupplierPicker">
+            <van-picker
+                :columns="customerOptions"
+                @confirm="onSupplierConfirm"
+            />
+          </van-popup>
 
           <van-field
               v-model="form.supplierContact"
               label="联系方式"
               placeholder="手机号或邮箱"
               :rules="[
-              { required: true, message: '请输入联系方式' },
-              { validator: contactValidator }
+              { required: false, message: '请输入联系方式' },
             ]"
           />
 
@@ -307,6 +339,7 @@ const data = reactive({
 const form = reactive({
   productName: '',
   price: 0,
+  retailPrice: 0,
   stockQuantity: 0,
   unit: '',
   purchaseDate: '',
@@ -329,6 +362,9 @@ const editMode = ref(false)
 const currentEditId = ref(null)
 const fileList = ref([])
 const showPurchaseDatePicker = ref(false)
+const customerOptions = ref([])
+const showSupplierPicker = ref(false)
+const showFilterSupplierPicker = ref(false)
 
 // 日期范围显示文本
 const dateRangeText = computed(() => {
@@ -338,6 +374,33 @@ const dateRangeText = computed(() => {
   }
   return ''
 })
+
+const onSupplierConfirm = ({ selectedOptions }) => {
+  const selectedCustomer = selectedOptions[0]?.value
+  if (selectedCustomer) {
+    form.supplierChannel = selectedCustomer.customerName
+    form.supplierContact = selectedCustomer.phoneNum || '' // 自动填充联系方式
+  }
+  showSupplierPicker.value = false
+}
+
+const onFilterSupplierConfirm = ({ selectedOptions }) => {
+  data.queryParams.supplier = selectedOptions[0]?.value || ''
+  showFilterSupplierPicker.value = false
+}
+
+// 加载客户列表
+const loadCustomers = async () => {
+  try {
+    const res = await request.get('/customer/list')
+    customerOptions.value = res.data.map(c => ({
+      text: c.customerName,
+      value: c
+    }))
+  } catch (error) {
+    showToast('供应商加载失败')
+  }
+}
 
 // 加载数据
 const load = async () => {
@@ -496,7 +559,9 @@ const handleEdit = (item) => {
   nextTick(() => {
     Object.assign(form, {
       ...item,
-      purchaseDate: dayjs(item.purchaseDate).format('YYYY-MM-DD')
+      purchaseDate: dayjs(item.purchaseDate).format('YYYY-MM-DD'),
+      // 自动关联联系方式（兼容旧数据）
+      supplierContact: item.supplierContact || findCustomerContact(item.supplierChannel)
     })
 
     // 处理图片显示（添加时间戳避免缓存）
@@ -508,6 +573,14 @@ const handleEdit = (item) => {
     }
   })
   showForm.value = true
+}
+
+// 新增根据供应商名称查找联系方式的方法
+const findCustomerContact = (supplierName) => {
+  const customer = customerOptions.value.find(
+      c => c.value.customerName === supplierName
+  )?.value
+  return customer?.phoneNum || ''
 }
 
 const resetForm = () => {
@@ -570,6 +643,7 @@ const handleBatchDelete = () => {
 // 初始化
 onMounted(() => {
   load()
+  loadCustomers() // 新增客户列表加载
 })
 </script>
 
@@ -741,5 +815,19 @@ onMounted(() => {
   text-align: center;
   font-size: 12px;
   padding: 2px 0;
+}
+
+/* 添加选择器样式 */
+.van-picker {
+  --van-picker-toolbar-height: 44px;
+  --van-picker-title-font-size: 16px;
+}
+
+.van-picker__toolbar {
+  padding: 0 16px;
+}
+
+.van-picker-column__item {
+  font-size: 16px;
 }
 </style>
