@@ -98,13 +98,16 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int addCustomer(Customer customer) {
-        Long count = lambdaQuery()
-                .eq(Customer::getWechatNum, customer.getWechatNum())
-                .eq(Customer::getPhoneNum, customer.getPhoneNum())
-                .count();
-        if (count > 0) {
-            throw new CustomException("3001", "微信号/手机号已存在，请更换！");
+        if (customer==null) {
+            throw new CustomException("3003", "客户信息为null");
         }
+//        Long count = lambdaQuery()
+//                .eq(Customer::getWechatNum, customer.getWechatNum())
+//                .eq(Customer::getPhoneNum, customer.getPhoneNum())
+//                .count();
+//        if (count > 0) {
+//            throw new CustomException("3001", "微信号/手机号已存在，请更换！");
+//        }
         // 软删除标记设置
         customer.setIsDeleted(0);
         return customerMapper.insert(customer);

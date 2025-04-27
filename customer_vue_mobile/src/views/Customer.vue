@@ -30,7 +30,7 @@
     >
       <van-checkbox-group v-model="selectedIds" ref="checkboxGroup">
         <van-cell v-for="item in data.tableData" :key="item.customerId">
-          <van-checkbox :name="item.customerId" />
+          <van-checkbox :name="item.customerId"/>
           <div class="customer-info">
             <div class="info-header">
               <span class="name">{{ item.customerName }}</span>
@@ -88,12 +88,11 @@
         <van-form>
           <van-field name="industry" label="所属行业">
             <template #input>
-              <van-dropdown-menu>
-                <van-dropdown-item
-                    v-model="data.queryParams.industry"
-                    :options="data.industries"
-                />
-              </van-dropdown-menu>
+              <van-field
+                  v-model="data.queryParams.industry"
+                  placeholder="输入行业筛选"
+                  clearable
+              />
             </template>
           </van-field>
 
@@ -169,13 +168,10 @@
 
           <van-field
               v-model="form.businessIndustry"
-              is-link
-              readonly
               name="industry"
               label="所属行业"
-              placeholder="请选择行业"
-              @click="showIndustryPicker = true"
-              :rules="[{ required: true, message: '请选择行业' }]"
+              placeholder="请输入行业"
+              :rules="[{ required: false, message: '请输入行业' }]"
           />
 
           <van-field
@@ -183,10 +179,8 @@
               label="微信号"
               placeholder="请输入微信号"
               :rules="[
-              { required: true, message: '请填写微信号' },
-              { pattern: /^[a-zA-Z][\w-]{5,19}$/, message: '微信号格式不正确' }
+              { required: false, message: '请填写微信号' },
             ]"
-              @blur="checkWechat"
           />
 
           <van-field
@@ -194,10 +188,8 @@
               label="手机号"
               placeholder="请输入手机号"
               :rules="[
-              { required: true, message: '请填写手机号' },
-              { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' }
+              { required: false, message: '请填写手机号' },
             ]"
-              @blur="checkPhone"
           />
 
           <van-field
@@ -224,21 +216,12 @@
         </van-cell-group>
       </van-form>
     </van-popup>
-
-    <!-- 行业选择器 -->
-    <van-popup v-model:show="showIndustryPicker" round position="bottom">
-      <van-picker
-          :columns="data.industries"
-          @confirm="onIndustryConfirm"
-          @cancel="showIndustryPicker = false"
-      />
-    </van-popup>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
-import { showConfirmDialog, showToast } from 'vant'
+import {ref, reactive, onMounted, computed} from 'vue'
+import {showConfirmDialog, showToast} from 'vant'
 import request from '@/utils/request'
 
 const data = reactive({
@@ -272,7 +255,6 @@ const finished = ref(false)
 const selectedIds = ref([])
 const showAdvanced = ref(false)
 const showForm = ref(false)
-const showIndustryPicker = ref(false)
 const editMode = ref(false)
 const currentEditId = ref(null)
 const originalWechat = ref('')
@@ -309,40 +291,6 @@ const nextPage = () => {
 const totalPages = computed(() => {
   return Math.ceil(data.total / data.queryParams.pageSize);
 });
-
-// 加载行业数据
-const loadIndustries = async () => {
-  try {
-    const mockData = [
-      { name: '农、林、牧、渔业', id: 1 },
-      {name: '采矿业', id: 2},
-      {name: '制造业', id: 3},
-      {name: '电力、热力、燃气及水生产和供应业', id: 4},
-      {name: '建筑业', id: 5},
-      {name: '批发和零售业', id: 6},
-      {name: '交通运输、仓储和邮政业', id: 7},
-      {name: '住宿和餐饮业', id: 8},
-      {name: '信息传输、软件和信息技术服务业', id: 9},
-      {name: '金融业', id: 10},
-      {name: '房地产业', id: 11},
-      {name: '租赁和商务服务业', id: 12},
-      {name: '科学研究和技术服务业', id: 13},
-      {name: '水利、环境和公共设施管理业', id: 14},
-      {name: '居民服务、修理和其他服务业', id: 15},
-      {name: '教育', id: 16},
-      {name: '卫生和社会工作', id: 17},
-      {name: '文化、体育和娱乐业', id: 18},
-      {name: '公共管理、社会保障和社会组织', id: 19},
-      {name: '国际组织', id: 20},
-    ]
-    data.industries = mockData.map(item => ({
-      text: item.name,
-      value: item.name
-    }))
-  } catch (error) {
-    showToast('行业加载失败')
-  }
-}
 
 // 表单验证
 const checkWechat = async () => {
@@ -418,7 +366,7 @@ const resetForm = () => {
 // 提交表单
 const submitForm = async () => {
   try {
-    const submitData = { ...form }
+    const submitData = {...form}
     if (editMode.value) submitData.customerId = currentEditId.value
 
     const apiUrl = editMode.value ? '/customer/update' : '/customer/add'
@@ -441,7 +389,7 @@ const handleDelete = (id) => {
     title: '删除确认',
     message: '确定要删除该客户吗？'
   }).then(async () => {
-    await request.post('/customer/delete/batch', { ids: [id] })
+    await request.post('/customer/delete/batch', {ids: [id]})
     showToast('删除成功')
     load()
   })
@@ -458,23 +406,16 @@ const handleBatchDelete = () => {
     title: '批量删除',
     message: `确定要删除选中的 ${selectedIds.value.length} 项吗？`
   }).then(async () => {
-    await request.post('/customer/delete/batch', { ids: selectedIds.value })
+    await request.post('/customer/delete/batch', {ids: selectedIds.value})
     showToast('删除成功')
     selectedIds.value = []
     load()
   })
 }
 
-// 行业选择
-const onIndustryConfirm = (value) => {
-  form.businessIndustry = value.selectedOptions[0].text
-  showIndustryPicker.value = false
-}
-
 // 初始化
 onMounted(() => {
   load()
-  loadIndustries()
 })
 </script>
 

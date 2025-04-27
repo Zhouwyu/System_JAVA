@@ -137,7 +137,7 @@ const handleSubmit = async () => {
     }
     // 登录成功处理
     localStorage.setItem('accessToken', data.data.accessToken)
-    localStorage.setItem('username', data.data.username)
+    localStorage.setItem('username', data.data.userName)
     showToast({
       message: '登录成功',
       icon: 'success',
