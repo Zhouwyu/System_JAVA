@@ -13,6 +13,8 @@ import {
     Button as VanButton,
     Toast,
     Icon,
+    Collapse, CollapseItem,
+    DatePicker
 } from 'vant'
 
 const app = createApp(App)
@@ -26,5 +28,8 @@ app.use(VanForm)
     .use(VanButton)
     .use(Toast)
     .use(Icon)
+    .use(Collapse)
+    .use(CollapseItem)
+    .use(DatePicker)
 
 app.mount('#app')

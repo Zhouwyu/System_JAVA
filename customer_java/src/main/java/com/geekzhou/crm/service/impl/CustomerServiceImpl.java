@@ -44,8 +44,8 @@ public class CustomerServiceImpl extends ServiceImpl<CustomerMapper, Customer> i
                 Customer::getCustomerName,
                 queryDTO.getName());
 
-        // 行业精确匹配
-        wrapper.eq(StrUtil.isNotBlank(queryDTO.getIndustry()),
+        // 行业模糊匹配
+        wrapper.like(StrUtil.isNotBlank(queryDTO.getIndustry()),
                 Customer::getBusinessIndustry,
                 queryDTO.getIndustry());
 
