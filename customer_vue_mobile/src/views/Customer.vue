@@ -5,10 +5,10 @@
         v-model="data.queryParams.name"
         placeholder="请输入客户名称"
         shape="round"
-        @search="load"
+        @search="handleQuery"
     >
       <template #right-icon>
-        <van-button size="small" type="primary" @click="load">查询</van-button>
+        <van-button size="small" type="primary" @click="handleQuery">查询</van-button>
       </template>
     </van-search>
 
@@ -260,6 +260,11 @@ const currentEditId = ref(null)
 const originalWechat = ref('')
 const originalPhone = ref('')
 
+const handleQuery = () => {
+  data.queryParams.pageNum = 1 // 强制重置页码
+  load()
+}
+
 // 加载数据
 const load = async () => {
   try {
@@ -278,6 +283,14 @@ const load = async () => {
     loading.value = false;
   }
 }
+
+// 新增分页方法
+const prevPage = () => {
+  if (data.queryParams.pageNum > 1) {
+    data.queryParams.pageNum--;
+    load();
+  }
+};
 
 const nextPage = () => {
   const totalPages = Math.ceil(data.total / data.queryParams.pageSize);

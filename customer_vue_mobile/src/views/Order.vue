@@ -5,7 +5,7 @@
       <van-search
           v-model="data.queryParams.orderNo"
           placeholder="订单编号"
-          @search="load"
+          @search="handleQuery"
       />
       <div class="filter-btns">
         <van-button size="small" @click="showCustomerPicker = true">
@@ -14,7 +14,7 @@
         <van-button size="small" @click="showDatePicker = true">
           选择日期
         </van-button>
-        <van-button type="primary" size="small" @click="load">
+        <van-button type="primary" size="small" @click="handleQuery">
           查询
         </van-button>
       </div>
@@ -26,9 +26,9 @@
         <van-button type="primary" size="small" @click="handleAdd">
           新建
         </van-button>
-        <van-button type="danger" size="small" @click="handleBatchDelete">
-          删除
-        </van-button>
+        <!--        <van-button type="danger" size="small" @click="handleBatchDelete">-->
+        <!--          删除-->
+        <!--        </van-button>-->
       </div>
     </van-sticky>
 
@@ -44,7 +44,26 @@
             :label="formatDate(item.createTime)"
             @click="showOrderDetail(item)"
         />
+        <template #left>
+          <van-button
+              v-if="item.status === 1"
+              square
+              type="warning"
+              text="修订"
+              @click="handleRevise(item)"
+          />
+        </template>
+
         <template #right>
+          <!-- 标记出货按钮 -->
+          <van-button
+              v-if="item.status === 1"
+              square
+              type="success"
+              text="标记出货"
+              @click="handleShip(item.orderId)"
+          />
+
           <van-button
               square
               type="danger"
@@ -74,6 +93,92 @@
         </van-button>
       </div>
     </div>
+
+    <!-- 新增修订弹窗 -->
+    <van-popup
+        v-model:show="showRevise"
+        position="bottom"
+        :style="{ height: '90%' }"
+    >
+      <van-form @submit="submitRevision">
+        <van-cell title="修订订单" class="form-title" align="center"/>
+
+        <!-- 客户信息展示 -->
+        <van-cell title="客户名称" :value="reviseForm.customerName"/>
+
+        <!-- 出货时间选择 -->
+        <van-field
+            v-model="reviseForm.shipmentDate"
+            label="出货时间"
+            placeholder="点击选择时间"
+            readonly
+            clickable
+            @click="showReviseDatePicker = true"
+        />
+
+        <!-- 商品列表 -->
+        <div v-for="(product, index) in reviseForm.products"
+             :key="index"
+             class="product-item">
+          <van-cell :title="product.productName"/>
+          <div class="product-controls">
+            <van-field
+                v-model="product.salePrice"
+                label="成交价"
+                type="number"
+                :rules="[{ validator: priceValidator }]"
+            />
+            <van-stepper
+                v-model="product.quantity"
+                :min="1"
+                :max="product.stock"
+            />
+            <van-field
+                v-model="product.itemDiscount"
+                label="单品折扣"
+                type="number"
+                :rules="[{ validator: discountValidator }]"
+            />
+          </div>
+        </div>
+
+        <!-- 折扣类型选择 -->
+        <van-radio-group v-model="reviseForm.discountType">
+          <van-radio name="0">无折扣</van-radio>
+          <van-radio name="1">百分比</van-radio>
+          <van-radio name="2">固定金额</van-radio>
+        </van-radio-group>
+
+        <!-- 折扣金额输入 -->
+        <van-field
+            v-if="reviseForm.discountType === '1'"
+            v-model="reviseForm.discountRate"
+            label="折扣率"
+            type="number"
+            suffix="%"
+        />
+        <van-field
+            v-if="reviseForm.discountType === '2'"
+            v-model="reviseForm.discountAmount"
+            label="优惠金额"
+            type="number"
+        />
+
+        <!-- 修订备注 -->
+        <van-field
+            v-model="reviseForm.remark"
+            label="修订备注"
+            type="textarea"
+            rows="2"
+        />
+
+        <div class="submit-btn">
+          <van-button round block type="primary" native-type="submit">
+            提交修订
+          </van-button>
+        </div>
+      </van-form>
+    </van-popup>
 
     <!-- 客户选择弹窗增加搜索 -->
     <van-popup v-model:show="showCustomerSelect" position="bottom" class="customer-select-popup">
@@ -111,7 +216,7 @@
               @click="toggleProductSelection(product)"
           >
             <template #right-icon>
-              <van-checkbox :name="product.productId" :disabled="product.stock <= 0" />
+              <van-checkbox :name="product.productId" :disabled="product.stock <= 0"/>
             </template>
           </van-cell>
         </van-checkbox-group>
@@ -122,14 +227,14 @@
     </van-popup>
 
     <!-- 日期选择 -->
-    <van-popup v-model:show="showDatePicker" position="bottom">
-      <van-date-picker
-          v-model="currentDate"
-          type="range"
-          @confirm="onDateConfirm"
-          @cancel="showDatePicker = false"
-      />
-    </van-popup>
+    <!--    <van-popup v-model:show="showDatePicker" position="bottom">-->
+    <!--      <van-date-picker-->
+    <!--          v-model="currentDate"-->
+    <!--          type="range"-->
+    <!--          @confirm="onDateConfirm"-->
+    <!--          @cancel="showDatePicker = false"-->
+    <!--      />-->
+    <!--    </van-popup>-->
 
     <!-- 新建订单弹窗 -->
     <van-popup
@@ -138,7 +243,7 @@
         :style="{ height: '90%' }"
     >
       <van-form @submit="submitForm">
-        <van-cell title="新建订单" class="form-title" />
+        <van-cell title="新建订单" class="form-title" align="center"/>
 
         <!-- 客户选择 -->
         <van-field
@@ -149,6 +254,25 @@
             clickable
             @click="showCustomerSelect = true"
         />
+
+        <!-- 新增客户信息展示 -->
+        <div v-if="form.customerId" class="customer-info">
+          <van-cell
+              title="联系方式"
+              :value="form.customerPhone"
+              class="info-cell"
+          />
+          <van-cell
+              title="联系地址"
+              :value="form.customerAddress"
+              class="info-cell"
+          />
+          <van-cell
+              title="所属行业"
+              :value="form.customerBusinessIndustry"
+              class="info-cell"
+          />
+        </div>
 
         <!-- 商品选择 -->
         <van-field
@@ -162,8 +286,18 @@
 
         <!-- 商品明细 -->
         <div v-for="(item, index) in form.products" :key="index" class="product-item">
-          <van-cell :title="item.productName" :value="`¥${item.salePrice}`" />
+          <van-cell :title="item.productName"/>
           <div class="product-controls">
+            <!-- 价格输入 -->
+            <van-field
+                v-model="item.salePrice"
+                label="成交价"
+                type="number"
+                :rules="[{ validator: priceValidator, message: '价格不能低于0' }]"
+            >
+              <template #extra>¥</template>
+            </van-field>
+
             <van-stepper
                 v-model="item.quantity"
                 integer
@@ -197,7 +331,7 @@
             placeholder="点击选择时间"
             readonly
             clickable
-            @click="showTimePicker = true"
+            @click="showDatePicker = true"
         />
 
         <van-field
@@ -221,6 +355,8 @@
     <van-popup v-model:show="showDatePicker" position="bottom">
       <van-date-picker
           v-model="currentDate"
+          type="date"
+          title="选择出货日期"
           :min-date="minDate"
           @confirm="handleDateConfirm"
           @cancel="showDatePicker = false"
@@ -230,6 +366,7 @@
     <van-popup v-model:show="showTimePicker" position="bottom">
       <van-time-picker
           v-model="currentTime"
+          title="选择出货日期"
           @confirm="handleTimeConfirm"
           @cancel="showTimePicker = false"
       />
@@ -243,10 +380,10 @@
     >
       <div class="detail-content" v-if="currentOrder">
         <h3 class="detail-title">订单详情</h3>
-        <van-cell title="订单编号" :value="currentOrder.orderNo" />
-        <van-cell title="客户名称" :value="currentOrder.customer?.customerName" />
-        <van-cell title="联系方式" :value="currentOrder.customer?.phoneNum" />
-        <van-cell title="联系地址" :value="currentOrder.customer?.address" />
+        <van-cell title="订单编号" :value="currentOrder.orderNo"/>
+        <van-cell title="客户名称" :value="currentOrder.customer?.customerName"/>
+        <van-cell title="联系方式" :value="currentOrder.customer?.phoneNum"/>
+        <van-cell title="联系地址" :value="currentOrder.customer?.address"/>
 
         <van-collapse v-model="activeCollapse">
           <van-collapse-item title="商品明细" name="products">
@@ -265,16 +402,16 @@
             </div>
           </van-collapse-item>
         </van-collapse>
-        <van-cell title="总金额"  :value="`¥${Math.max(currentOrder.totalPrice, 0)}`"  />
+        <van-cell title="总金额" :value="`¥${Math.max(currentOrder.totalPrice, 0)}`"/>
         <van-cell
             :title="discountInfo.title"
             :value="discountInfo.value"
         />
-        <van-cell title="订单备注" :value="currentOrder.remark" />
-        <van-cell title="下单时间" :value="formatDate(currentOrder.createTime)" />
-        <van-cell title="出货时间" :value="formatDate(currentOrder.shipmentDate)" />
-        <van-cell title="订单状态" :value="orderStatusMap[currentOrder.status]" />
-        <van-cell title="操作员" :value="currentOrder.operator.name" />
+        <van-cell title="订单备注" :value="currentOrder.remark"/>
+        <van-cell title="下单时间" :value="formatDate(currentOrder.createTime)"/>
+        <van-cell title="出货时间" :value="formatDate(currentOrder.shipmentDate)"/>
+        <van-cell title="订单状态" :value="orderStatusMap[currentOrder.status]"/>
+        <van-cell title="操作员" :value="currentOrder.operator.name"/>
 
       </div>
     </van-popup>
@@ -282,8 +419,8 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed, onMounted } from 'vue'
-import {Dialog, showToast, Toast} from 'vant'
+import {reactive, ref, computed, onMounted} from 'vue'
+import {Dialog, showConfirmDialog, showToast, Toast} from 'vant'
 import request from '@/utils/request'
 import dayjs from "dayjs";
 
@@ -366,6 +503,20 @@ const currentOrder = ref({
   isRevised: false       // 是否是修订订单
 })
 
+// 新增修订相关状态
+const showRevise = ref(false)
+const showReviseDatePicker = ref(false)
+const reviseForm = reactive({
+  orderId: null,
+  customerName: '',
+  shipmentDate: '',
+  products: [],
+  discountType: '0',
+  discountRate: 0,
+  discountAmount: 0,
+  remark: ''
+})
+
 // 移动端特有状态
 const showCustomerPicker = ref(false)
 const showDatePicker = ref(false)
@@ -373,7 +524,7 @@ const showCreate = ref(false)
 const showTimePicker = ref(false)
 const showDetail = ref(false)
 const currentDate = ref(new Date())
-const currentTime = ref('12:00')
+const currentTime = ref(new Date())
 const minDate = new Date()
 const activeCollapse = ref([])
 const showCustomerSelect = ref(false)
@@ -398,12 +549,17 @@ const statusTagType = {
   2: 'success',
 }
 
+const handleQuery = () => {
+  data.queryParams.pageNum = 1 // 强制重置页码
+  load()
+}
+
 const discountInfo = computed(() => {
   const type = currentOrder.value.discountType
   const rate = currentOrder.value.discountRate
   const amount = currentOrder.value.discountAmount
 
-  switch(type) {
+  switch (type) {
     case 1:
       return {
         title: '总体折扣率',
@@ -421,6 +577,11 @@ const discountInfo = computed(() => {
       }
   }
 })
+
+// 添加价格验证方法
+const priceValidator = (val) => {
+  return Number(val) >= 0
+}
 
 // 获取可用商品列表（过滤已失效商品）
 const availableProducts = computed(() => {
@@ -479,7 +640,7 @@ const updateSelectedProductsText = () => {
 // 修改商品数量处理方法
 const calculateTotal = () => {
   form.totalPrice = form.products.reduce((sum, item) => {
-    return sum + (item.salePrice * item.quantity)
+    return sum + (Number(item.salePrice) * item.quantity)
   }, 0)
   updateSelectedProductsText()
 }
@@ -540,7 +701,7 @@ const openCustomerSelect = () => {
 }
 
 // 完善客户选择逻辑
-const onCustomerSelectConfirm = ({ selectedOptions }) => {
+const onCustomerSelectConfirm = ({selectedOptions}) => {
   const selected = selectedOptions[0]
   form.customerId = selected.value
   selectedCustomerName.value = selected.text
@@ -549,9 +710,9 @@ const onCustomerSelectConfirm = ({ selectedOptions }) => {
   // 获取并填充客户详细信息
   const customer = data.customerOptions.find(c => c.value === selected.value)
   if (customer) {
-    form.customerPhone = customer.phoneNum || ''
-    form.customerAddress = customer.address || ''
-    form.customerBusinessIndustry = customer.businessIndustry || ''
+    form.customerPhone = customer.phoneNum || '-'
+    form.customerAddress = customer.address || '-'
+    form.customerBusinessIndustry = customer.businessIndustry || '-'
   }
 }
 
@@ -566,7 +727,10 @@ const loadBaseData = async () => {
 
     data.customerOptions = customers.data.map(c => ({
       value: c.customerId,
-      label: c.customerName
+      label: c.customerName,
+      phoneNum: c.phoneNum,
+      address: c.address,
+      businessIndustry: c.businessIndustry,
     }))
 
     data.productOptions = products.data.map(p => ({
@@ -578,8 +742,6 @@ const loadBaseData = async () => {
       // 补充完整商品信息
       ...p
     }))
-    // 强制更新过滤列表
-    // filteredProducts.value = [...data.productOptions]
   } catch (error) {
     showToast('基础数据加载失败')
   }
@@ -608,11 +770,11 @@ const load = async () => {
   try {
     const params = {
       ...data.queryParams,
-      beginShipmentDate: currentDate.value[0],
-      endShipmentDate: currentDate.value[1]
+      // beginShipmentDate: currentDate.value[0],
+      // endShipmentDate: currentDate.value[1]
     }
 
-    const res = await request.get('/order/page', { params })
+    const res = await request.get('/order/page', {params})
     data.tableData = res.data.records
     data.total = res.data.total
   } catch (error) {
@@ -629,13 +791,21 @@ const handleAdd = () => {
 const submitForm = async () => {
   try {
     const payload = {
-      ...form,
-      products: form.products.map(item => ({
+      customerId: form.customerId,
+      productsDtos: form.products.map(item => ({
         productId: item.productId,
+        productName: item.productName,
         quantity: item.quantity,
+        price: item.price,
         salePrice: item.salePrice,
+        stock: item.stock,
+        orderNo: "",
         productRemark: item.productRemark
-      }))
+      })),
+      totalPrice: form.totalPrice,
+      remark: form.remark,
+      shipmentDate: form.shipmentDate,
+      operator: localStorage.getItem("username")
     }
 
     await request.post('/order/add', payload)
@@ -643,7 +813,7 @@ const submitForm = async () => {
     showCreate.value = false
     load()
   } catch (error) {
-    Toast.fail('提交失败')
+    showToast('提交失败')
   }
 }
 
@@ -656,26 +826,29 @@ const showOrderDetail = async (item) => {
 
 // 处理日期确认
 const handleDateConfirm = (date) => {
-  currentDate.value = date
+  currentDate.value = new Date(date)
   showDatePicker.value = false
-  showTimePicker.value = true
+  showTimePicker.value = true // 选择完日期后显示时间选择器
 }
 
 // 处理时间确认
 const handleTimeConfirm = (time) => {
-  const selectedDate = new Date(currentDate.value)
-  const [hours, minutes] = time.split(':')
+  // 合并日期和时间
+  const mergedDate = new Date(
+      currentDate.value.getFullYear(),
+      currentDate.value.getMonth(),
+      currentDate.value.getDate(),
+      time.getHours(),
+      time.getMinutes()
+  )
 
-  selectedDate.setHours(hours)
-  selectedDate.setMinutes(minutes)
-
-  // 验证时间是否合法
-  if (selectedDate < new Date()) {
+  if (mergedDate < new Date()) {
     showToast('不能选择过去的时间')
     return
   }
 
-  form.shipmentDate = dayjs(selectedDate).format('YYYY-MM-DD HH:mm:ss')
+  form.shipmentDate = dayjs(mergedDate).format('YYYY-MM-DD HH:mm:ss')
+  currentTime.value = mergedDate
   showTimePicker.value = false
 }
 
@@ -685,12 +858,124 @@ const formatDate = (dateString) => {
 }
 
 // 其他方法保持与PC端类似，调整交互方式即可
+const handleShip = async (orderId) => {
+  showConfirmDialog({
+        title: '出货确认',
+        message: '确定标记出货该订单记录吗？',
+        confirmButtonText: '确认出货',
+        cancelButtonText: '取消',
+        theme: 'round-button',
+        className: 'delete-dialog'
+      }
+  ).then(async () => {
+    try {
+      await request.get(`/order/ship/${orderId}`);
+      showToast({
+        type: 'success',
+        message: '订单状态已更新',
+        duration: 1500
+      });
+      load(); // 刷新列表数据
+    } catch (error) {
+      showToast({
+        type: 'danger',
+        message: '操作失败: ' + (error.response?.data?.message || error.message)
+      });
+    }
+  })
+};
+
+// 删除操作（移动端适配）
+const handleDelete = (id) => {
+  showConfirmDialog({
+    title: '删除确认',
+    message: '确定要删除该订单记录吗？',
+    confirmButtonText: '确认删除',
+    cancelButtonText: '取消',
+    theme: 'round-button',
+    className: 'delete-dialog'
+  }).then(async () => {
+    try {
+      await request.post('/order/delete/batch', {ids: [id]})
+      showToast({
+        type: 'success',
+        message: '删除成功',
+        duration: 1500
+      })
+      load()
+      loadBaseData()
+    } catch (error) {
+      showToast({
+        type: 'danger',
+        message: '删除失败: ' + (error.response?.data?.message || error.message)
+      })
+    }
+  }).catch(() => {
+    // 取消操作
+  })
+}
+
+// 处理修订操作
+const handleRevise = async (order) => {
+  try {
+    const res = await request.get(`/order/detail/${order.orderId}`)
+    Object.assign(reviseForm, {
+      orderId: res.data.orderId,
+      customerName: res.data.customer?.customerName,
+      shipmentDate: res.data.shipmentDate,
+      products: res.data.products.map(p => ({
+        ...p,
+        salePrice: p.salePrice,
+        quantity: p.quantity,
+        itemDiscount: p.itemDiscount || 0,
+        stock: p.stockQuantity
+      })),
+      discountType: res.data.discountType?.toString() || '0',
+      discountRate: res.data.discountRate,
+      discountAmount: res.data.discountAmount,
+      remark: res.data.remark
+    })
+    showRevise.value = true
+  } catch (error) {
+    showToast('获取订单详情失败')
+  }
+}
+
+// 提交修订
+const submitRevision = async () => {
+  try {
+    const payload = {
+      originalOrderId: reviseForm.orderId,
+      products: reviseForm.products.map(p => ({
+        productId: p.productId,
+        quantity: p.quantity,
+        salePrice: p.salePrice,
+        itemDiscount: p.itemDiscount
+      })),
+      discountType: parseInt(reviseForm.discountType),
+      discountRate: reviseForm.discountRate,
+      discountAmount: reviseForm.discountAmount,
+      shipmentDate: reviseForm.shipmentDate,
+      remark: reviseForm.remark
+    }
+
+    await request.post('/order/revise', payload)
+    showToast('修订成功')
+    showRevise.value = false
+    load()
+  } catch (error) {
+    showToast('修订失败：' + error.message)
+  }
+}
+
+// 折扣验证
+const discountValidator = (val) => {
+  return val >= 0 && val <= 100
+}
 
 onMounted(() => {
   load()
   loadBaseData()
-  // filteredProducts.value = [...data.productOptions]
-  // filteredCustomers.value = [...data.customerOptions]
 })
 </script>
 
@@ -721,10 +1006,10 @@ onMounted(() => {
 }
 
 .product-controls {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 150px 120px 1fr 32px;
   gap: 8px;
-  margin-top: 8px;
+  align-items: center;
 }
 
 .remark-field {
@@ -767,7 +1052,7 @@ onMounted(() => {
   justify-content: center;
   align-items: center;
   gap: 15px;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   display: flex;
   padding: 16px 0;
   margin-top: auto; /* 关键：使分页始终位于底部 */
@@ -813,5 +1098,28 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* 新增客户信息样式 */
+.customer-info {
+  margin: 0 16px;
+  background: #f7f8fa;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.info-cell {
+  padding: 8px 16px;
+}
+
+:deep(.info-cell) .van-cell__title {
+  flex: 0 0 80px;
+  color: #666;
+}
+
+:deep(.info-cell) .van-cell__value {
+  color: #333;
+  text-align: left;
+  padding-left: 12px;
 }
 </style>

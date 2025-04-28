@@ -14,7 +14,7 @@ import {
     Toast,
     Icon,
     Collapse, CollapseItem,
-    DatePicker
+    DatePicker, TimePicker
 } from 'vant'
 
 const app = createApp(App)
@@ -31,5 +31,6 @@ app.use(VanForm)
     .use(Collapse)
     .use(CollapseItem)
     .use(DatePicker)
+    .use(TimePicker)
 
 app.mount('#app')

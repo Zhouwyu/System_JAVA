@@ -5,10 +5,10 @@
         v-model="data.queryParams.name"
         placeholder="请输入商品名称"
         shape="round"
-        @search="load"
+        @search="handleQuery"
     >
       <template #right-icon>
-        <van-button size="small" type="primary" @click="load">查询</van-button>
+        <van-button size="small" type="primary" @click="handleQuery">查询</van-button>
       </template>
     </van-search>
 
@@ -429,6 +429,11 @@ const load = async () => {
   } finally {
     loading.value = false;
   }
+}
+
+const handleQuery = () => {
+  data.queryParams.pageNum = 1 // 强制重置页码
+  load()
 }
 
 // 计算属性
