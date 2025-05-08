@@ -8,17 +8,30 @@
           @search="handleQuery"
       />
       <div class="filter-btns">
-        <van-button size="small" @click="showCustomerPicker = true">
-          选择客户
-        </van-button>
-        <van-button size="small" @click="showDatePicker = true">
+<!--        <van-button size="small" @click="showCustomerPicker = true">-->
+<!--          选择客户-->
+<!--        </van-button>-->
+        <van-button size="small" @click="showQueryDatePicker = true">
           选择日期
         </van-button>
         <van-button type="primary" size="small" @click="handleQuery">
           查询
         </van-button>
+        <van-button type="danger" size="small" @click="handleReset">
+          重置
+        </van-button>
       </div>
     </van-sticky>
+
+    <van-popup v-model:show="showQueryDatePicker" position="bottom">
+      <van-date-picker
+          v-model="data.queryParams.dateRange"
+          type="date"
+          title="选择出货日期"
+          @confirm="handleQueryShipmentDateConfirm"
+          @cancel="showQueryDatePicker = false"
+      />
+    </van-popup>
 
     <!-- 操作按钮 -->
     <van-sticky :offset-top="94">
@@ -294,6 +307,7 @@
                 label="成交价"
                 type="number"
                 :rules="[{ validator: priceValidator, message: '价格不能低于0' }]"
+                @change="calculateTotal"
             >
               <template #extra>¥</template>
             </van-field>
@@ -354,8 +368,7 @@
     <!-- 日期时间选择组合 -->
     <van-popup v-model:show="showDatePicker" position="bottom">
       <van-date-picker
-          v-model="currentDate"
-          type="date"
+          v-model="shipmentAddDate"
           title="选择出货日期"
           :min-date="minDate"
           @confirm="handleDateConfirm"
@@ -363,14 +376,14 @@
       />
     </van-popup>
 
-    <van-popup v-model:show="showTimePicker" position="bottom">
-      <van-time-picker
-          v-model="currentTime"
-          title="选择出货日期"
-          @confirm="handleTimeConfirm"
-          @cancel="showTimePicker = false"
-      />
-    </van-popup>
+<!--    <van-popup v-model:show="showTimePicker" position="bottom">-->
+<!--      <van-time-picker-->
+<!--          v-model="shipmentTime"-->
+<!--          title="选择出货日期"-->
+<!--          @confirm="handleTimeConfirm"-->
+<!--          @cancel="showTimePicker = false"-->
+<!--      />-->
+<!--    </van-popup>-->
 
     <!-- 订单详情 -->
     <van-popup
@@ -520,11 +533,13 @@ const reviseForm = reactive({
 // 移动端特有状态
 const showCustomerPicker = ref(false)
 const showDatePicker = ref(false)
+const showQueryDatePicker = ref(false)
 const showCreate = ref(false)
 const showTimePicker = ref(false)
 const showDetail = ref(false)
 const currentDate = ref(new Date())
-const currentTime = ref(new Date())
+const shipmentAddDate = ref(['2025','05','08'])
+const shipmentTime = ref()
 const minDate = new Date()
 const activeCollapse = ref([])
 const showCustomerSelect = ref(false)
@@ -770,15 +785,19 @@ const load = async () => {
   try {
     const params = {
       ...data.queryParams,
-      // beginShipmentDate: currentDate.value[0],
-      // endShipmentDate: currentDate.value[1]
     }
+    if (data.queryParams.dateRange && data.queryParams.dateRange.length > 1) {
+      params.beginShipmentDate = data.queryParams.dateRange[0]
+          + '-' + data.queryParams.dateRange[1] + '-' + data.queryParams.dateRange[2]
 
+      params.endShipmentDate = params.beginShipmentDate
+    }
+    delete params.dateRange
     const res = await request.get('/order/page', {params})
     data.tableData = res.data.records
     data.total = res.data.total
   } catch (error) {
-    Toast.fail('加载失败')
+    showToast('加载失败')
   }
 }
 
@@ -808,10 +827,14 @@ const submitForm = async () => {
       operator: localStorage.getItem("username")
     }
 
-    await request.post('/order/add', payload)
-    Toast.success('创建成功')
-    showCreate.value = false
-    load()
+    const response = await request.post('/order/add', payload);
+    if (response.code === '200') {
+      showToast('创建成功')
+      showCreate.value = false
+      load()
+    } else {
+      showToast('新建订单失败，请查看后台信息')
+    }
   } catch (error) {
     showToast('提交失败')
   }
@@ -824,20 +847,46 @@ const showOrderDetail = async (item) => {
   showDetail.value = true
 }
 
+const handleReset = () =>{
+  data.queryParams = {
+    ...data.queryParams,  // 保留分页参数
+    orderNo: '',
+    customerId: null,
+    productId: null,
+    dateRange: [],
+  }
+  load()
+}
+
+const handleQueryShipmentDateConfirm = (date) => {
+  data.queryParams.dateRange.value = new Date(date)
+  showQueryDatePicker.value = false
+  data.queryParams.pageNum = 1
+  load()
+}
+
 // 处理日期确认
 const handleDateConfirm = (date) => {
-  currentDate.value = new Date(date)
+  const year = date.selectedValues[0]
+  const month = date.selectedValues[1]
+  const day = date.selectedValues[2]
+  shipmentAddDate.value[0] = year
+  shipmentAddDate.value[1] = month
+  shipmentAddDate.value[2] = day
+  form.shipmentDate = year + '-' + month + '-' + day + " 00:00:00"
   showDatePicker.value = false
-  showTimePicker.value = true // 选择完日期后显示时间选择器
 }
 
 // 处理时间确认
 const handleTimeConfirm = (time) => {
   // 合并日期和时间
   const mergedDate = new Date(
-      currentDate.value.getFullYear(),
-      currentDate.value.getMonth(),
-      currentDate.value.getDate(),
+      // currentDate.value.getFullYear(),
+      shipmentDate.value.getFullYear(),
+      // currentDate.value.getMonth(),
+      shipmentDate.value.getMonth(),
+      // currentDate.value.getDate(),
+      shipmentDate.value.getDate(),
       time.getHours(),
       time.getMinutes()
   )
@@ -848,7 +897,8 @@ const handleTimeConfirm = (time) => {
   }
 
   form.shipmentDate = dayjs(mergedDate).format('YYYY-MM-DD HH:mm:ss')
-  currentTime.value = mergedDate
+  // currentTime.value = mergedDate
+  shipmentTime.value = mergedDate
   showTimePicker.value = false
 }
 
