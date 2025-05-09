@@ -212,73 +212,68 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     @Transactional(rollbackFor = Exception.class)
     public int batchDelOrder(List<Integer> ids) {
         StaticLog.info("看看前端传过来的订单编号集合：{}", ids);
-        // 1. 查询有效的未删除订单
-        List<Order> validOrders = orderMapper.selectList(
+        // 1. 查询需要恢复库存的订单（仅状态为1的待出货订单）
+        List<Order> restoreStockOrders  = orderMapper.selectList(
                 Wrappers.<Order>lambdaQuery()
                         .select(Order::getOrderId, Order::getOrderNo) // 使用实体类get方法
                         .in(Order::getOrderId, ids)
                         .eq(Order::getIsDeleted, 0)
+                        .eq(Order::getStatus, OrderShipmentStatus.PENDING.getCode())
         );
-        StaticLog.info("看看需要删除的订单：{}", validOrders);
-        if (validOrders.isEmpty()) {
-            return 0;
+        StaticLog.info("看看需要恢复库存的订单：{}", restoreStockOrders );
+        // 需要恢复库存的,待出货订单
+        if (!restoreStockOrders .isEmpty()) {
+            // 2. 获取订单编号集合
+            List<String> orderNos = restoreStockOrders.stream()
+                    .map(Order::getOrderNo)
+                    .collect(Collectors.toList());
+            StaticLog.info("看看订单编号集合：{}", orderNos);
+
+            // 3. 查询订单商品关联记录
+            List<OrderWithProducts> orderProducts = orderWithProductsMapper.selectList(
+                    new QueryWrapper<OrderWithProducts>()
+                            .select("product_id", "quantity")
+                            .in("order_num", orderNos)
+            );
+            StaticLog.info("看看商品关联记录：{}", orderProducts);
+
+            // 4. 按商品ID聚合需要恢复的数量
+            Map<Integer, Integer> productStockRecovery = orderProducts.stream()
+                    .collect(Collectors.groupingBy(
+                            OrderWithProducts::getProductId,
+                            Collectors.summingInt(OrderWithProducts::getQuantity)
+                    ));
+
+            StaticLog.info("看看需要恢复的数据：{}", productStockRecovery);
+            // 5. 批量恢复商品库存（使用SQL原子操作）
+            productStockRecovery.forEach((productId, quantity) -> {
+                // 1. 先查询当前版本号
+                Product product = productMapper.selectOne(
+                        new QueryWrapper<Product>()
+                                .select("version")
+                                .eq("products_id", productId)
+                );
+
+                // 2. 带版本号的更新
+                int rows = productMapper.update(null,
+                        new UpdateWrapper<Product>()
+                                .setSql("stock_quantity = stock_quantity + " + quantity)
+                                .setSql("version = version + 1")
+                                .eq("products_id", productId)
+                                .eq("version", product.getVersion())
+                );
+
+                // 3. 处理并发冲突
+                if (rows == 0) {
+                    throw new OptimisticLockingFailureException("商品ID：" + productId + " 库存恢复失败，版本冲突");
+                }
+            });
         }
-
-        // 2. 获取订单编号集合
-        List<String> orderNos = validOrders.stream()
-                .map(Order::getOrderNo)
-                .collect(Collectors.toList());
-        StaticLog.info("看看订单编号集合：{}", orderNos);
-
-        // 3. 查询订单商品关联记录
-        List<OrderWithProducts> orderProducts = orderWithProductsMapper.selectList(
-                new QueryWrapper<OrderWithProducts>()
-                        .select("product_id", "quantity")
-                        .in("order_num", orderNos)
-        );
-        StaticLog.info("看看商品关联记录：{}", orderProducts);
-
-        // 4. 按商品ID聚合需要恢复的数量
-        Map<Integer, Integer> productStockRecovery = orderProducts.stream()
-                .collect(Collectors.groupingBy(
-                        OrderWithProducts::getProductId,
-                        Collectors.summingInt(OrderWithProducts::getQuantity)
-                ));
-
-        StaticLog.info("看看需要恢复的数据：{}", productStockRecovery);
-        // 5. 批量恢复商品库存（使用SQL原子操作）
-        productStockRecovery.forEach((productId, quantity) -> {
-            // 1. 先查询当前版本号
-            Product product = productMapper.selectOne(
-                    new QueryWrapper<Product>()
-                            .select("version")
-                            .eq("products_id", productId)
-            );
-
-            // 2. 带版本号的更新
-            int rows = productMapper.update(null,
-                    new UpdateWrapper<Product>()
-                            .setSql("stock_quantity = stock_quantity + " + quantity)
-                            .setSql("version = version + 1")
-                            .eq("products_id", productId)
-                            .eq("version", product.getVersion())
-            );
-
-            // 3. 处理并发冲突
-            if (rows == 0) {
-                throw new OptimisticLockingFailureException("商品ID：" + productId + " 库存恢复失败，版本冲突");
-            }
-        });
-
-        // 6. 执行批量软删除
-        List<Integer> validOrderIds = validOrders.stream()
-                .map(Order::getOrderId)
-                .collect(Collectors.toList());
-
+        // 标记所有订单为已删除（包括已出货的）
         int updateCount = orderMapper.update(null,
                 new UpdateWrapper<Order>()
                         .set("is_deleted", 1)
-                        .in("order_id", validOrderIds)
+                        .in("order_id", ids)
         );
 
         return updateCount;
@@ -382,6 +377,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
         StaticLog.info("看看修改订单接收到的：{}", orderReviseDto);
         // 1、获取原始订单
         Order originalOrder  = orderMapper.selectById(orderReviseDto.getOriginalOrderId());
+        StaticLog.info("看看原始订单是什么：{}", originalOrder);
         if (originalOrder == null) {
             throw new CustomException("601", "原订单不存在");
         }

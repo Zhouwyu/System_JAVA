@@ -37,7 +37,7 @@
     <van-sticky :offset-top="94">
       <div class="action-btns">
         <van-button type="primary" size="small" @click="handleAdd">
-          新建
+          新建订单
         </van-button>
         <!--        <van-button type="danger" size="small" @click="handleBatchDelete">-->
         <!--          删除-->
@@ -121,7 +121,7 @@
 
         <!-- 出货时间选择 -->
         <van-field
-            v-model="reviseForm.shipmentDate"
+            v-model="reviseForm.newShipmentDate"
             label="出货时间"
             placeholder="点击选择时间"
             readonly
@@ -133,26 +133,42 @@
         <div v-for="(product, index) in reviseForm.products"
              :key="index"
              class="product-item">
-          <van-cell :title="product.productName"/>
+          <van-cell :title="product.productName" :label="`库存: ${product.stock}`"/>
           <div class="product-controls">
             <van-field
                 v-model="product.salePrice"
-                label="成交价"
+                label="价格"
                 type="number"
+                input-align="right"
                 :rules="[{ validator: priceValidator }]"
-            />
+                class="price-field"
+            >
+              <template #extra>¥/{{product.unit || '件'}}</template>
+            </van-field>
             <van-stepper
                 v-model="product.quantity"
-                :min="1"
-                :max="product.stock"
+                :min="0"
+                :max="product.stock + product.quantity"
+                class="compact-stepper"
             />
             <van-field
                 v-model="product.itemDiscount"
-                label="单品折扣"
+                label="扣减"
                 type="number"
+                input-align="right"
+                class="discount-field"
                 :rules="[{ validator: discountValidator }]"
             />
           </div>
+          <van-field
+              v-model="product.productRemark"
+              label="商品备注"
+              placeholder="请输入商品备注"
+              class="product-remark"
+              rows="1"
+              autosize
+              type="textarea"
+          />
         </div>
 
         <!-- 折扣类型选择 -->
@@ -165,17 +181,37 @@
         <!-- 折扣金额输入 -->
         <van-field
             v-if="reviseForm.discountType === '1'"
-            v-model="reviseForm.discountRate"
+            v-model.number="reviseForm.discountRate"
             label="折扣率"
             type="number"
-            suffix="%"
+            suffix="%OFF"
         />
         <van-field
             v-if="reviseForm.discountType === '2'"
-            v-model="reviseForm.discountAmount"
+            v-model.number="reviseForm.discountAmount"
             label="优惠金额"
             type="number"
         />
+
+        <!-- 金额汇总 -->
+        <van-cell class="amount-summary">
+          <div class="amount-row">
+            <span>商品合计：</span>
+            <span class="amount">¥{{ productTotal.toFixed(2) }}</span>
+          </div>
+          <div class="amount-row">
+            <span>单品优惠：</span>
+            <span class="amount">-¥{{ itemDiscountTotal.toFixed(2) }}</span>
+          </div>
+          <div class="amount-row" v-if="orderDiscount > 0">
+            <span>{{ discountTypeLabel }}：</span>
+            <span class="amount">-¥{{ orderDiscount.toFixed(2) }}</span>
+          </div>
+          <div class="amount-row total">
+            <span>应付总额：</span>
+            <span class="amount">¥{{ payableTotal.toFixed(2) }}</span>
+          </div>
+        </van-cell>
 
         <!-- 修订备注 -->
         <van-field
@@ -191,6 +227,18 @@
           </van-button>
         </div>
       </van-form>
+    </van-popup>
+
+    <!-- 修订订单出货时间选择弹窗   -->
+    <van-popup v-model:show="showReviseDatePicker" position="bottom">
+      <van-date-picker
+          v-model="shipmentReviseDate"
+          type="date"
+          :min-date="minDate"
+          title="选择新出货日期"
+          @confirm="handleReviseShipmentDateConfirm"
+          @cancel="showReviseDatePicker = false"
+      />
     </van-popup>
 
     <!-- 客户选择弹窗增加搜索 -->
@@ -521,13 +569,17 @@ const showRevise = ref(false)
 const showReviseDatePicker = ref(false)
 const reviseForm = reactive({
   orderId: null,
+  orderNo: '',
   customerName: '',
   shipmentDate: '',
   products: [],
   discountType: '0',
   discountRate: 0,
   discountAmount: 0,
-  remark: ''
+  remark: '',
+  version: 0,
+  newShipmentDate: '',          // 新增出货时间
+  originalShipmentDate: '',     // 记录原始出货时间
 })
 
 // 移动端特有状态
@@ -539,6 +591,7 @@ const showTimePicker = ref(false)
 const showDetail = ref(false)
 const currentDate = ref(new Date())
 const shipmentAddDate = ref(['2025','05','08'])
+const shipmentReviseDate = ref(['2025','05','08'])
 const shipmentTime = ref()
 const minDate = new Date()
 const activeCollapse = ref([])
@@ -858,11 +911,24 @@ const handleReset = () =>{
   load()
 }
 
+// 查找区域出货日期确认
 const handleQueryShipmentDateConfirm = (date) => {
   data.queryParams.dateRange.value = new Date(date)
   showQueryDatePicker.value = false
   data.queryParams.pageNum = 1
   load()
+}
+
+// 修订订单区域出货日期确认
+const handleReviseShipmentDateConfirm = (date) => {
+  const year = date.selectedValues[0]
+  const month = date.selectedValues[1]
+  const day = date.selectedValues[2]
+  shipmentReviseDate.value[0] = year
+  shipmentReviseDate.value[1] = month
+  shipmentReviseDate.value[2] = day
+  reviseForm.newShipmentDate = year + '-' + month + '-' + day + " 00:00:00"
+  showReviseDatePicker.value = false
 }
 
 // 处理日期确认
@@ -971,8 +1037,11 @@ const handleRevise = async (order) => {
     const res = await request.get(`/order/detail/${order.orderId}`)
     Object.assign(reviseForm, {
       orderId: res.data.orderId,
+      orderNo: res.data.orderNo,
       customerName: res.data.customer?.customerName,
       shipmentDate: res.data.shipmentDate,
+      newShipmentDate: res.data.shipmentDate,
+      originalShipmentDate: res.data.shipmentDate,
       products: res.data.products.map(p => ({
         ...p,
         salePrice: p.salePrice,
@@ -983,7 +1052,8 @@ const handleRevise = async (order) => {
       discountType: res.data.discountType?.toString() || '0',
       discountRate: res.data.discountRate,
       discountAmount: res.data.discountAmount,
-      remark: res.data.remark
+      remark: res.data.remark,
+      version: res.data.version
     })
     showRevise.value = true
   } catch (error) {
@@ -996,24 +1066,36 @@ const submitRevision = async () => {
   try {
     const payload = {
       originalOrderId: reviseForm.orderId,
-      products: reviseForm.products.map(p => ({
+      originalOrderNo: reviseForm.orderNo,
+      productsRevise: reviseForm.products.map(p => ({
         productId: p.productId,
+        productName: p.productName,
         quantity: p.quantity,
         salePrice: p.salePrice,
-        itemDiscount: p.itemDiscount
+        itemDiscount: p.itemDiscount,
+        productRemark: p.productRemark
       })),
       discountType: parseInt(reviseForm.discountType),
       discountRate: reviseForm.discountRate,
       discountAmount: reviseForm.discountAmount,
-      shipmentDate: reviseForm.shipmentDate,
-      remark: reviseForm.remark
+      newShipmentDate: dayjs(reviseForm.newShipmentDate).format('YYYY-MM-DD HH:mm:ss'),
+      revisionRemark: reviseForm.remark,
+      version: reviseForm.version,
+      totalPrice: payableTotal.value,
+      operator: localStorage.getItem('username'),
+      isShipmentChanged: reviseForm.newShipmentDate !== reviseForm.originalShipmentDate,
     }
 
-    await request.post('/order/revise', payload)
-    showToast('修订成功')
-    showRevise.value = false
-    load()
+    const res = await request.post('/order/revise', payload);
+    if (res.code === '200') {
+      showToast('修订成功')
+      showRevise.value = false
+      load()
+    } else {
+      showToast('修订失败,请查看后台错误信息')
+    }
   } catch (error) {
+    console.log(error)
     showToast('修订失败：' + error.message)
   }
 }
@@ -1022,6 +1104,41 @@ const submitRevision = async () => {
 const discountValidator = (val) => {
   return val >= 0 && val <= 100
 }
+
+// 原总价
+const productTotal = computed(() => {
+  return reviseForm.products.reduce((sum, product) =>
+      sum + (product.salePrice * product.quantity), 0)
+})
+
+// 单品折扣
+const itemDiscountTotal = computed(() => {
+  return reviseForm.products.reduce((sum, product) =>
+      sum + (product.itemDiscount * product.quantity), 0)
+})
+
+// 总折扣
+const orderDiscount = computed(() => {
+  if (reviseForm.discountType === '1') {
+    return (productTotal.value-itemDiscountTotal.value) * (Number(reviseForm.discountRate) / 100)
+  }
+  if (reviseForm.discountType === '2') {
+    return Number(reviseForm.discountAmount)
+  }
+  return 0
+})
+
+const discountTypeLabel = computed(() => {
+  return {
+    '0': '',
+    '1': '折扣减免',
+    '2': '优惠减免'
+  }[reviseForm.discountType]
+})
+
+const payableTotal = computed(() => {
+  return Math.max(productTotal.value - itemDiscountTotal.value - orderDiscount.value, 0)
+})
 
 onMounted(() => {
   load()
@@ -1053,13 +1170,6 @@ onMounted(() => {
   padding: 8px;
   background: #f7f8fa;
   border-radius: 8px;
-}
-
-.product-controls {
-  display: grid;
-  grid-template-columns: 150px 120px 1fr 32px;
-  gap: 8px;
-  align-items: center;
 }
 
 .remark-field {
@@ -1171,5 +1281,113 @@ onMounted(() => {
   color: #333;
   text-align: left;
   padding-left: 12px;
+}
+
+/* 样式优化 */
+.product-item {
+  margin: 8px;
+  background: #f3eaea;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* 添加商品备注样式 */
+.product-remark {
+  margin: 8px 0;
+  :deep(.van-field__label) {
+    color: #7b7979;
+    font-size: 13px;
+  }
+  :deep(textarea) {
+    font-size: 14px;
+    min-height: 32px;
+    padding: 4px 8px;
+  }
+}
+
+.product-controls {
+  display: grid;
+  grid-template-columns: 8fr 100px 8fr;
+  column-gap: 1px;  /* 增加列间距 */
+  gap: 5px;
+  padding: 0 16px;
+  margin-bottom: 8px;
+}
+
+.compact-field {
+  padding: 4px 0;
+
+  :deep(.van-field__label) {
+    width: 60px;
+  }
+
+  :deep(input) {
+    font-size: 14px;
+    padding: 0 8px;
+  }
+}
+
+.compact-stepper {
+  :deep(.van-stepper__input) {
+    width: 50px;
+    margin: 0 6px;
+  }
+
+  :deep(.van-stepper__minus),
+  :deep(.van-stepper__plus) {
+    width: 26px;
+  }
+}
+
+.amount-summary {
+  margin: 16px;
+  background: #f8f8f8;
+  border-radius: 8px;
+
+  .amount-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 14px;
+
+    &.total {
+      border-top: 1px solid #eee;
+      margin-top: 8px;
+      padding-top: 12px;
+      font-weight: 500;
+
+      .amount {
+        color: #ee0a24;
+        font-size: 16px;
+      }
+    }
+  }
+
+  .amount {
+    font-family: monospace;
+    color: #333;
+  }
+}
+
+.submit-btn {
+  margin: 16px;
+
+  :deep(.van-button) {
+    font-size: 14px;
+  }
+}
+
+/* 给金额字段添加右内边距 */
+.price-field,
+.discount-field {
+  :deep(.van-field__control) {
+    padding-right: 24px !important;
+  }
+
+  :deep(.van-field__extra) {
+    margin-right: -8px;
+    color: #ee0a24;
+    font-weight: 500;
+  }
 }
 </style>
